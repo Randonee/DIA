@@ -54,9 +54,9 @@ If a view class has the above as its template, a header property would be automa
 
 Here is a sample class using the above template:
 
-	class AdminUserReportView extends dia.js.JSView
+	class NoteView extends dia.js.JSView
 	{
-		static var TEMPLATE = "AdminUserReportView.mtt";
+		static var TEMPLATE = "NoteView.mtt";
 		public function new(?props:Dynamic)
 		{
 			super(TEMPLATE, props);
