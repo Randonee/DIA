@@ -1,0 +1,10 @@
+<server>
+	<db>
+		<host>localhost</host>
+		<database>note</database>
+		<user>root</user>
+		<password>root</password>
+		<socket></socket>
+		<port>3306</port>
+	</db>
+</server>

@@ -1,0 +1,12 @@
+<div class="NoteDisplay">
+
+	<div>
+		Name: <input id="nameInput" />
+	</div>
+
+	<div>
+		Body: <textarea id="bodyText" ></textarea>
+	</div>
+
+	<a href="javascript:;" onclick="::view::.onUpdateNote()">Update</a>
+</div>

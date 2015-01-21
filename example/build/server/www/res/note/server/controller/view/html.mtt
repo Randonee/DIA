@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"> 
+    <head>
+    	<meta charset='utf-8'>
+        <title>Note</title>
+		::mainJs::
+		::mainCss::
+		<script type="text/javascript">
+			window.onload = function()
+			{
+				App.setToken("::token::");
+				App.setBaseURL("::baseURL::");
+				var data = JSON.parse('::initialData::');
+				var initialData = dia.util.ConversionUtil.toDomainObject(data);
+				var view = new ::viewClass::(initialData);
+
+				document.body.appendChild(view.element);
+				App.htmlMain(view, initialData);
+			}
+		</script>  
+    </head>
+<body>
+</body>
+</html>

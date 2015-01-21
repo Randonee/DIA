@@ -1,0 +1,7 @@
+<service>
+	<api>
+		<note>
+			<uri>api/note</uri>
+		</note>
+	</api>
+</service>

@@ -1,0 +1,19 @@
+-D server
+-D spod_macro
+-cp ../src
+-cp src
+-cp libs
+-main note.server.Main
+-php build/server/www
+
+--next 
+
+--macro note.client.Wiring.build()
+-D client
+-D embed_js
+-cp libs
+-cp ../src
+-cp src
+-main note.client.Main
+--macro dia.js.JsGenerator.use()
+-js build/server/www/script/script.js

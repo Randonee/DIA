@@ -1,0 +1,7 @@
+<div class="NoteView" xmlns:note="note.client.platform.html.view.note">
+	<note:Header name="header" />
+
+	<div class="noteList" id="notesList"></div>
+	<a href="javascript:;" onclick="::view::.onAddNote()">Add Note</a>
+	<note:NoteDisplay name="noteDisplay" />
+</div>
