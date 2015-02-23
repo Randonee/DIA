@@ -1,8 +1,7 @@
 DIA framework
 ==========
 
-DIA is a framework aimed at projects that have a server and multiple clients. Currently the server has only been tested with
-php and clients have mostly been html/js.
+DIA is an MVC framework aimed at projects that have a server and multiple clients. Currently the server has only been tested with php and clients have mostly been html/js. DIA makes us of Signals ([msignal](https://github.com/massiveinteractive/msignal "msignal")) for communication and IOC ([minject](https://github.com/massiveinteractive/minject "minject")) for dependancy injection.
 
 A full example can be seen here:
 https://github.com/Randonee/DIA/tree/master/example
