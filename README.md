@@ -21,10 +21,10 @@ The client framework makes heavy use of macros to create the "wiring" between th
 	* This is created in a macro and extends ApplicationBase
 
 2. Haps
-	* Haps map directly to commands. They are mostly sent from the view but can also be sent from commands. There is one big enum called Hap. The enum constructors are created using a macro.
+	* Haps are event like and map directly to commands. They are mostly sent from the view but can also be sent from commands. There is one big enum called Hap. The enum constructors are created using a macro.
 
 3. Notice
-	* Notices come from commands and go to haps. There is one big enum called Notice. The enum constructors are created using a macro.
+	* Notices are also event like. They originate from commands and are sent to views. There is one big enum called Notice. The enum constructors are created using a macro.
 
 4. Commands
 	* Commands are executed using haps. They are bundles of logic to do things for the application. They have access to the model and return domain objects and other data back to the views.
@@ -45,8 +45,8 @@ Views have two parts, a template and a class file (optional css as well). When t
 A full example can be seen here:
 https://github.com/Randonee/DIA/tree/master/example
 
-View classes extend dia.js.JSView. Among other things this base class includes a build macro that looks for the static property TEMPLATE on
-child classes. The TEMPLATE property should point to a html template file. The macro will parse this file, do some things then include it with the final javascript file.
+View classes extend dia.js.JSView. Among other things this base class includes a build macro that looks for the static property called "TEMPLATE" on child classes. The TEMPLATE property should point to a html template file. The macro will parse this file, do some things, then include it with the final javascript file.
+An Example of this can be seen here: https://github.com/Randonee/DIA/blob/master/example/src/note/client/platform/html/view/note/NoteView.hx
 
 Templates are xml files which end up as html. Templates can contain other templates. To do this an xmlns attribute is added to the first tag of the template. The xmlns attribute has two parts: a name and package.
 
