@@ -44,7 +44,7 @@ class haxe_format_JsonPrinter {
 				$this->buf->add("\"<fun>\"");
 			}break;
 			case 6:{
-				$c = $_g->params[0];
+				$c = _hx_deref($_g)->params[0];
 				if((is_object($_t = $c) && !($_t instanceof Enum) ? $_t === _hx_qtype("String") : $_t == _hx_qtype("String"))) {
 					$this->quote($v);
 				} else {
@@ -113,6 +113,7 @@ class haxe_format_JsonPrinter {
 							if(null == $v6) throw new HException('null iterable');
 							$__hx__it = $v6->keys();
 							while($__hx__it->hasNext()) {
+								unset($k1);
 								$k1 = $__hx__it->next();
 								$value = $v6->get($k1);
 								$o->{$k1} = $value;
@@ -154,6 +155,7 @@ class haxe_format_JsonPrinter {
 		$this->buf->b .= "{";
 		$len = $fields->length;
 		$last = $len - 1;
+		$first = true;
 		{
 			$_g = 0;
 			while($_g < $len) {
@@ -163,10 +165,11 @@ class haxe_format_JsonPrinter {
 				if(Reflect::isFunction($value)) {
 					continue;
 				}
-				if($i > 0) {
-					$this->buf->b .= ",";
-				} else {
+				if($first) {
 					$this->nind++;
+					$first = false;
+				} else {
+					$this->buf->b .= ",";
 				}
 				if($this->pretty) {
 					$this->buf->b .= "\x0A";

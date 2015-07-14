@@ -18,8 +18,7 @@ class haxe_io_Output {
 		}
 		return $len;
 	}
-	public function close() {
-	}
+	public function close() {}
 	public function writeFullBytes($s, $pos, $len) {
 		while($len > 0) {
 			$k = $this->writeBytes($s, $pos, $len);
@@ -28,7 +27,6 @@ class haxe_io_Output {
 			unset($k);
 		}
 	}
-	public function prepare($nbytes) {
-	}
+	public function prepare($nbytes) {}
 	function __toString() { return 'haxe.io.Output'; }
 }

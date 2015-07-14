@@ -20,6 +20,17 @@ class php_db__PDO_PDOConnection implements sys_db_Connection{
 			$this->pdo = new PDO($dsn, $user, $password, $arr);
 		}
 		$this->dbname = _hx_explode(":", $dsn)->shift();
+		{
+			$_g2 = strtolower($this->dbname);
+			switch($_g2) {
+			case "sqlite":{
+				$this->dbname = "SQLite";
+			}break;
+			case "mysql":{
+				$this->dbname = "MySQL";
+			}break;
+			}
+		}
 	}}
 	public $pdo;
 	public $dbname;
@@ -31,7 +42,7 @@ class php_db__PDO_PDOConnection implements sys_db_Connection{
 				$a = $this->pdo->errorInfo();
 				$info = new _hx_array($a);
 			}
-			throw new HException("Error while executing " . _hx_string_or_null($s) . " (" . _hx_string_or_null($info[2]) . ")");
+			throw new HException("Error while executing " . _hx_string_or_null($s) . " (" . Std::string($info[2]) . ")");
 		}
 		$db = strtolower($this->dbname);
 		switch($db) {

@@ -13,7 +13,7 @@ using StringTools;
 	//view id incremented for each view created
 	private static var currentViewId:Int = 0;
 	
-	//Base url of web site. Example: http://www.example.com/
+	//Base url of web site. Example: http://www.limespring.com
 	static public var BASE_URL:String;
 	static private var ___views:Map<String, JSView>;
 	
@@ -251,9 +251,9 @@ using StringTools;
 	{
 		for(node in parentNode.childNodes)
 		{
-			if(node.nodeType == 1 && node.hasAttributes())
+			if(node.nodeType == 1 && untyped node.hasAttributes())
 			{
-				var att = node.attributes.getNamedItem("id");
+				var att = untyped node.attributes.getNamedItem("id");
 				if(att != null && att.nodeValue == id)
 					return untyped node;
 			}

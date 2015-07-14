@@ -51,7 +51,7 @@ class sys_db_TableCreate {
 			return "TINYINT(1)";
 		}break;
 		case 9:{
-			$n = $t->params[0];
+			$n = _hx_deref($t)->params[0];
 			return "VARCHAR(" . _hx_string_rec($n, "") . ")";
 		}break;
 		case 10:{
@@ -88,12 +88,12 @@ class sys_db_TableCreate {
 			return "BIGINT " . _hx_string_or_null(sys_db_TableCreate::autoInc($dbName));
 		}break;
 		case 19:{
-			$n1 = $t->params[0];
+			$n1 = _hx_deref($t)->params[0];
 			return "BINARY(" . _hx_string_rec($n1, "") . ")";
 		}break;
 		case 23:{
-			$auto = $t->params[1];
-			$fl = $t->params[0];
+			$auto = _hx_deref($t)->params[1];
+			$fl = _hx_deref($t)->params[0];
 			return sys_db_TableCreate::getTypeSQL((($auto) ? (($fl->length <= 8) ? sys_db_RecordType::$DTinyUInt : (($fl->length <= 16) ? sys_db_RecordType::$DSmallUInt : (($fl->length <= 24) ? sys_db_RecordType::$DMediumUInt : sys_db_RecordType::$DInt))) : sys_db_RecordType::$DInt), $dbName);
 		}break;
 		case 33:case 32:{
@@ -130,8 +130,7 @@ class sys_db_TableCreate {
 							throw new HException("S" . _hx_string_or_null(_hx_substr(Std::string($f->t), 1, null)) . " is not supported by " . _hx_string_or_null($dbName) . " : use SId instead");
 						}
 					}break;
-					default:{
-					}break;
+					default:{}break;
 					}
 					unset($_g2);
 				}

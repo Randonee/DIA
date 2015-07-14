@@ -7,6 +7,7 @@ class Lambda {
 		if(null == $it) throw new HException('null iterable');
 		$__hx__it = $it->iterator();
 		while($__hx__it->hasNext()) {
+			unset($i);
 			$i = $__hx__it->next();
 			$a->push($i);
 		}
@@ -17,6 +18,7 @@ class Lambda {
 		if(null == $it) throw new HException('null iterable');
 		$__hx__it = $it->iterator();
 		while($__hx__it->hasNext()) {
+			unset($x);
 			$x = $__hx__it->next();
 			$l->add(call_user_func_array($f, array($x)));
 		}
@@ -26,6 +28,7 @@ class Lambda {
 		if(null == $it) throw new HException('null iterable');
 		$__hx__it = $it->iterator();
 		while($__hx__it->hasNext()) {
+			unset($x);
 			$x = $__hx__it->next();
 			if((is_object($_t = $x) && !($_t instanceof Enum) ? $_t === $elt : $_t == $elt)) {
 				return true;
@@ -38,6 +41,7 @@ class Lambda {
 		if(null == $it) throw new HException('null iterable');
 		$__hx__it = $it->iterator();
 		while($__hx__it->hasNext()) {
+			unset($x);
 			$x = $__hx__it->next();
 			if(call_user_func_array($f, array($x))) {
 				return true;
@@ -50,6 +54,7 @@ class Lambda {
 		if(null == $it) throw new HException('null iterable');
 		$__hx__it = $it->iterator();
 		while($__hx__it->hasNext()) {
+			unset($x);
 			$x = $__hx__it->next();
 			if(call_user_func_array($f, array($x))) {
 				$l->add($x);

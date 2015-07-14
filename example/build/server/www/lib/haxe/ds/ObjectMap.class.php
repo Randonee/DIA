@@ -1,6 +1,6 @@
 <?php
 
-class haxe_ds_ObjectMap implements IMap{
+class haxe_ds_ObjectMap implements haxe_IMap{
 	public function __construct() {
 		if(!php_Boot::$skip_constructor) {
 		$this->h = array();

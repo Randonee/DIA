@@ -17,8 +17,7 @@ class note_server_controller_api_NoteAPIController extends dia_server_Controller
 			$method = strtoupper(php_Web::getMethod());
 		}
 		switch($method) {
-		case "GET":{
-		}break;
+		case "GET":{}break;
 		case "POST":{
 			$complete = array(new _hx_lambda(array(&$_g, &$method, &$params, &$uri), "note_server_controller_api_NoteAPIController_0"), 'execute');
 			$fail = array(new _hx_lambda(array(&$_g, &$complete, &$method, &$params, &$uri), "note_server_controller_api_NoteAPIController_1"), 'execute');

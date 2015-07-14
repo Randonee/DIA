@@ -23,7 +23,7 @@ class php_Web {
 			$code = "101 Switching Protocols";
 		}break;
 		case 200:{
-			$code = "200 Continue";
+			$code = "200 OK";
 		}break;
 		case 201:{
 			$code = "201 Created";

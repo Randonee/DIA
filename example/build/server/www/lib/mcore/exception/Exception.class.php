@@ -50,20 +50,21 @@ class mcore_exception_Exception {
 		while($stack->length > 0) {
 			{
 				$_g = $stack->shift();
-				switch($_g->index) {
-				case 2:{
-					$line = $_g->params[2];
-					$file = $_g->params[1];
-					$s .= "\x09at " . _hx_string_or_null($file) . " (" . _hx_string_rec($line, "") . ")\x0A";
-				}break;
-				case 3:{
-					$method = $_g->params[1];
-					$classname = $_g->params[0];
-					$s .= "\x09at " . _hx_string_or_null($classname) . "#" . _hx_string_or_null($method) . "\x0A";
-				}break;
-				default:{
-				}break;
-				}
+				if($_g !== null) {
+					switch($_g->index) {
+					case 2:{
+						$line = _hx_deref($_g)->params[2];
+						$file = _hx_deref($_g)->params[1];
+						$s .= "\x09at " . _hx_string_or_null($file) . " (" . _hx_string_rec($line, "") . ")\x0A";
+					}break;
+					case 3:{
+						$method = _hx_deref($_g)->params[1];
+						$classname = _hx_deref($_g)->params[0];
+						$s .= "\x09at " . _hx_string_or_null($classname) . "#" . _hx_string_or_null($method) . "\x0A";
+					}break;
+					default:{}break;
+					}
+				} else {}
 				unset($_g);
 			}
 		}

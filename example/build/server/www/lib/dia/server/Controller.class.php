@@ -1,13 +1,11 @@
 <?php
 
 class dia_server_Controller {
-	public function __construct() {
-		;
-	}
+	public function __construct() {}
 	public $injector;
-	public function handleRequest() {
-	}
+	public function handleRequest() {}
 	public function fail($code, $message = null, $errorResponse = null) {
+		if(!php_Boot::$skip_constructor) {
 		if($message !== null) {
 			header("Message" . ": " . _hx_string_or_null($message));
 		}
@@ -15,7 +13,7 @@ class dia_server_Controller {
 			php_Lib::hprint(dia_server_Controller_0($this, $code, $errorResponse, $message));
 		}
 		php_Web::setReturnCode($code);
-	}
+	}}
 	public function respond($response) {
 		if($response !== null) {
 			php_Lib::hprint(dia_server_Controller_1($this, $response));

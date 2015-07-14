@@ -33,6 +33,7 @@ class haxe_Template {
 		if(null == $this->stack) throw new HException('null iterable');
 		$__hx__it = $this->stack->iterator();
 		while($__hx__it->hasNext()) {
+			unset($ctx);
 			$ctx = $__hx__it->next();
 			if(_hx_has_field($ctx, $v)) {
 				return Reflect::field($ctx, $v);
@@ -326,17 +327,17 @@ class haxe_Template {
 	public function run($e) {
 		switch($e->index) {
 		case 0:{
-			$v = $e->params[0];
+			$v = _hx_deref($e)->params[0];
 			$this->buf->add(Std::string($this->resolve($v)));
 		}break;
 		case 1:{
-			$e1 = $e->params[0];
+			$e1 = _hx_deref($e)->params[0];
 			$this->buf->add(Std::string(call_user_func($e1)));
 		}break;
 		case 2:{
-			$eelse = $e->params[2];
-			$eif = $e->params[1];
-			$e2 = $e->params[0];
+			$eelse = _hx_deref($e)->params[2];
+			$eif = _hx_deref($e)->params[1];
+			$e2 = _hx_deref($e)->params[0];
 			{
 				$v1 = call_user_func($e2);
 				if($v1 === null || _hx_equal($v1, false)) {
@@ -349,21 +350,22 @@ class haxe_Template {
 			}
 		}break;
 		case 3:{
-			$str = $e->params[0];
+			$str = _hx_deref($e)->params[0];
 			$this->buf->add($str);
 		}break;
 		case 4:{
-			$l = $e->params[0];
+			$l = _hx_deref($e)->params[0];
 			if(null == $l) throw new HException('null iterable');
 			$__hx__it = $l->iterator();
 			while($__hx__it->hasNext()) {
+				unset($e3);
 				$e3 = $__hx__it->next();
 				$this->run($e3);
 			}
 		}break;
 		case 5:{
-			$loop = $e->params[1];
-			$e4 = $e->params[0];
+			$loop = _hx_deref($e)->params[1];
+			$e4 = _hx_deref($e)->params[0];
 			{
 				$v2 = call_user_func($e4);
 				try {
@@ -393,6 +395,7 @@ class haxe_Template {
 				$v3 = $v2;
 				$__hx__it = $v3;
 				while($__hx__it->hasNext()) {
+					unset($ctx);
 					$ctx = $__hx__it->next();
 					$this->context = $ctx;
 					$this->run($loop);
@@ -401,8 +404,8 @@ class haxe_Template {
 			}
 		}break;
 		case 6:{
-			$params = $e->params[1];
-			$m = $e->params[0];
+			$params = _hx_deref($e)->params[1];
+			$m = _hx_deref($e)->params[0];
 			{
 				$v4 = Reflect::field($this->macros, $m);
 				$pl = new _hx_array(array());
@@ -411,10 +414,11 @@ class haxe_Template {
 				if(null == $params) throw new HException('null iterable');
 				$__hx__it = $params->iterator();
 				while($__hx__it->hasNext()) {
+					unset($p);
 					$p = $__hx__it->next();
 					switch($p->index) {
 					case 0:{
-						$v5 = $p->params[0];
+						$v5 = _hx_deref($p)->params[0];
 						$pl->push($this->resolve($v5));
 					}break;
 					default:{

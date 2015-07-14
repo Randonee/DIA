@@ -12,20 +12,29 @@ class php_db__PDO_PHPNativeStrategy extends php_db__PDO_TypeStrategy {
 				return "string";
 			}
 		}
+		$pdo_type_str = PDO::PARAM_STR;
+		$pdo_type = $data["pdo_type"];
 		$type = $data["native_type"];
 		$type = strtolower($type);
 		switch($type) {
 		case "float":case "decimal":case "double":case "newdecimal":{
 			return "float";
 		}break;
-		case "date":case "datetime":{
+		case "date":case "datetime":case "timestamp":{
 			return "date";
 		}break;
-		case "bool":{
+		case "bool":case "tinyint(1)":{
 			return "bool";
 		}break;
-		case "int":case "int24":case "int32":case "long":case "longlong":case "short":{
+		case "int":case "int24":case "int32":case "long":case "longlong":case "short":case "tiny":{
 			return "int";
+		}break;
+		case "blob":{
+			if($pdo_type === $pdo_type_str) {
+				return "string";
+			} else {
+				return "blob";
+			}
 		}break;
 		default:{
 			return "string";

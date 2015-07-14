@@ -4,7 +4,7 @@ class haxe_xml_Fast {
 	public function __construct($x) {
 		if(!php_Boot::$skip_constructor) {
 		if((is_object($_t = $x->nodeType) && !($_t instanceof Enum) ? $_t !== Xml::$Document : $_t != Xml::$Document) && (is_object($_t2 = $x->nodeType) && !($_t2 instanceof Enum) ? $_t2 !== Xml::$Element : $_t2 != Xml::$Element)) {
-			throw new HException("Invalid nodeType " . Std::string($x->nodeType));
+			throw new HException("Invalid nodeType " . _hx_string_rec($x->nodeType, ""));
 		}
 		$this->x = $x;
 		$this->node = new haxe_xml__Fast_NodeAccess($x);
@@ -23,22 +23,26 @@ class haxe_xml_Fast {
 		if((is_object($_t = $this->x->nodeType) && !($_t instanceof Enum) ? $_t === Xml::$Document : $_t == Xml::$Document)) {
 			return "Document";
 		} else {
-			return $this->x->get_nodeName();
+			$_this = $this->x;
+			if((is_object($_t2 = $_this->nodeType) && !($_t2 instanceof Enum) ? $_t2 !== Xml::$Element : $_t2 != Xml::$Element)) {
+				throw new HException("Bad node type, expected Element but found " . _hx_string_rec($_this->nodeType, ""));
+			}
+			return $_this->nodeName;
 		}
 	}
 	public function get_innerHTML() {
 		$s = new StringBuf();
-		if(null == $this->x) throw new HException('null iterable');
-		$__hx__it = $this->x->iterator();
+		$__hx__it = haxe_xml_Fast_0($this, $s, $x);
 		while($__hx__it->hasNext()) {
+			unset($x);
 			$x = $__hx__it->next();
-			$s->add($x->toString());
+			$s->add(haxe_xml_Printer::hprint($x, null));
 		}
 		return $s->b;
 	}
 	public function get_elements() {
 		$it = $this->x->elements();
-		return _hx_anonymous(array("hasNext" => (isset($it->hasNext) ? $it->hasNext: array($it, "hasNext")), "next" => array(new _hx_lambda(array(&$it), "haxe_xml_Fast_0"), 'execute')));
+		return _hx_anonymous(array("hasNext" => (isset($it->hasNext) ? $it->hasNext: array($it, "hasNext")), "next" => array(new _hx_lambda(array(&$it), "haxe_xml_Fast_1"), 'execute')));
 	}
 	public function __call($m, $a) {
 		if(isset($this->$m) && is_callable($this->$m))
@@ -53,7 +57,16 @@ class haxe_xml_Fast {
 	static $__properties__ = array("get_elements" => "get_elements","get_innerHTML" => "get_innerHTML","get_name" => "get_name");
 	function __toString() { return 'haxe.xml.Fast'; }
 }
-function haxe_xml_Fast_0(&$it) {
+function haxe_xml_Fast_0(&$__hx__this, &$s, &$x) {
+	{
+		$_this = $__hx__this->x;
+		if((is_object($_t = $_this->nodeType) && !($_t instanceof Enum) ? $_t !== Xml::$Document : $_t != Xml::$Document) && (is_object($_t2 = $_this->nodeType) && !($_t2 instanceof Enum) ? $_t2 !== Xml::$Element : $_t2 != Xml::$Element)) {
+			throw new HException("Bad node type, expected Element or Document but found " . _hx_string_rec($_this->nodeType, ""));
+		}
+		return $_this->children->iterator();
+	}
+}
+function haxe_xml_Fast_1(&$it) {
 	{
 		$x = $it->next();
 		if($x === null) {

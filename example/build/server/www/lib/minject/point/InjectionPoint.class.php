@@ -7,7 +7,6 @@ class minject_point_InjectionPoint {
 	public function applyInjection($target, $injector) {
 		return $target;
 	}
-	public function initializeInjection($meta) {
-	}
+	public function initializeInjection($meta) {}
 	function __toString() { return 'minject.point.InjectionPoint'; }
 }

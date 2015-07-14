@@ -3,11 +3,15 @@
 class dia_util_ConversionUtil {
 	public function __construct(){}
 	static function toTransferObject($domainObject) {
+		if(_hx_field($domainObject, "getDTO") !== null) {
+			return $domainObject->getDTO();
+		}
 		if(dia_util_ObjectUtil::isIterable($domainObject)) {
 			$arr = (new _hx_array(array()));
 			$iterator = $domainObject->iterator();
 			$__hx__it = $iterator;
 			while($__hx__it->hasNext()) {
+				unset($subObj);
 				$subObj = $__hx__it->next();
 				$arr->push(dia_util_ConversionUtil::toTransferObject($subObj));
 			}
@@ -49,6 +53,7 @@ class dia_util_ConversionUtil {
 								$iterator1 = $fieldValue->iterator();
 								$__hx__it = $iterator1;
 								while($__hx__it->hasNext()) {
+									unset($subObj1);
 									$subObj1 = $__hx__it->next();
 									$arr1->push(dia_util_ConversionUtil::toTransferObject($subObj1));
 								}
@@ -71,13 +76,11 @@ class dia_util_ConversionUtil {
 						case 1:case 2:case 3:{
 							$to->{$fieldName} = $fieldValue;
 						}break;
-						default:{
-						}break;
+						default:{}break;
 						}
 					}
 				}break;
-				default:{
-				}break;
+				default:{}break;
 				}
 				unset($fieldValue,$fieldType,$fieldName);
 			}
@@ -90,6 +93,7 @@ class dia_util_ConversionUtil {
 			$iterator = $object->iterator();
 			$__hx__it = $iterator;
 			while($__hx__it->hasNext()) {
+				unset($subObj);
 				$subObj = $__hx__it->next();
 				$collection->push(dia_util_ConversionUtil::toDomainObject($subObj));
 			}
@@ -133,6 +137,7 @@ class dia_util_ConversionUtil {
 								$iterator1 = $fieldValue->iterator();
 								$__hx__it = $iterator1;
 								while($__hx__it->hasNext()) {
+									unset($subObj1);
 									$subObj1 = $__hx__it->next();
 									$collection1->push(dia_util_ConversionUtil::toDomainObject($subObj1));
 								}
@@ -155,13 +160,11 @@ class dia_util_ConversionUtil {
 						case 1:case 2:case 3:{
 							$domainObj->{$fieldName} = $fieldValue;
 						}break;
-						default:{
-						}break;
+						default:{}break;
 						}
 					}
 				}break;
-				default:{
-				}break;
+				default:{}break;
 				}
 				unset($fieldValue,$fieldType,$fieldName);
 			}

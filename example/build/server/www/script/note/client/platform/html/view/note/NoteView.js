@@ -23,9 +23,9 @@ note.client.platform.html.view.note.NoteView.prototype.handleNotice = function(n
 	case 1:
 		var status2 = notice[3];
 		var data2 = notice[2];
-		var note = dia.util.CollectionUtil.getById(this.notes,data2.note.uid);
-		note.name = data2.note.name;
-		note.body = data2.note.body;
+		var note1 = dia.util.CollectionUtil.getById(this.notes,data2.note.uid);
+		note1.name = data2.note.name;
+		note1.body = data2.note.body;
 		break;
 	}
 	this.refreshList();
@@ -36,9 +36,9 @@ note.client.platform.html.view.note.NoteView.prototype.refreshList = function() 
 	var _g = 0;
 	var _g1 = this.notes;
 	while(_g < _g1.length) {
-		var note = _g1[_g];
+		var note1 = _g1[_g];
 		++_g;
-		list += "<li><a href=\"javascript:;\" onclick=\"" + this.view + ".onListItemClick(" + note.uid + ")\">" + note.name + "</a> <a href=\"javascript:;\" onclick=\"" + this.view + ".onDeleteNote(" + note.uid + ")\">(delete)</a> </li>";
+		list += "<li><a href=\"javascript:;\" onclick=\"" + this.view + ".onListItemClick(" + note1.uid + ")\">" + note1.name + "</a> <a href=\"javascript:;\" onclick=\"" + this.view + ".onDeleteNote(" + note1.uid + ")\">(delete)</a> </li>";
 	}
 	list += "</ul>";
 	this.getElement("notesList").innerHTML = list;

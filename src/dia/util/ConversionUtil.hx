@@ -7,6 +7,9 @@ class ConversionUtil
 {
 	public static function toTransferObject(domainObject:Dynamic):Dynamic
 	{
+		if(domainObject.getDTO != null)
+			return domainObject.getDTO();
+
 		if(ObjectUtil.isIterable(domainObject))
 		{
 			var arr:Array<Dynamic> = [];

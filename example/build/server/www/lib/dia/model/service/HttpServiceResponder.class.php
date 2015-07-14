@@ -30,7 +30,11 @@ function dia_model_service_HttpServiceResponder_0(&$__hx__this, &$params) {
 	{
 		$text = null;
 		{
-			$s = php_Web::getParams()->get("data");
+			$s = null;
+			{
+				$this1 = php_Web::getParams();
+				$s = $this1->get("data");
+			}
 			$text = htmlspecialchars_decode($s, ENT_QUOTES);
 		}
 		return haxe_Json::phpJsonDecode($text);

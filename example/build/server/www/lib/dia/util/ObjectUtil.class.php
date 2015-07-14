@@ -84,8 +84,7 @@ class dia_util_ObjectUtil {
 			return $obj;
 		}catch(Exception $__hx__e) {
 			$_ex_ = ($__hx__e instanceof HException) ? $__hx__e->e : $__hx__e;
-			if(is_string($error = $_ex_)){
-			} else throw $__hx__e;;
+			if(is_string($error = $_ex_)){} else throw $__hx__e;;
 		}
 		return "";
 	}

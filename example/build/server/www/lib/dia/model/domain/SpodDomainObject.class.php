@@ -9,6 +9,9 @@ class dia_model_domain_SpodDomainObject extends sys_db_Object implements dia_mod
 	public function equals($obj) {
 		return $obj->uid === $this->uid;
 	}
+	public function __getManager() {
+		return dia_model_domain_SpodDomainObject::$manager;
+	}
 	public function __call($m, $a) {
 		if(isset($this->$m) && is_callable($this->$m))
 			return call_user_func_array($this->$m, $a);

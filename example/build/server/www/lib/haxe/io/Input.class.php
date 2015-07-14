@@ -18,7 +18,6 @@ class haxe_io_Input {
 		}
 		return $len;
 	}
-	public function close() {
-	}
+	public function close() {}
 	function __toString() { return 'haxe.io.Input'; }
 }

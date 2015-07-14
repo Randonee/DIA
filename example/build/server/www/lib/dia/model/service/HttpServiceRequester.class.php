@@ -55,8 +55,7 @@ class dia_model_service_HttpServiceRequester extends dia_model_service_ServiceRe
 		}catch(Exception $__hx__e) {
 			$_ex_ = ($__hx__e instanceof HException) ? $__hx__e->e : $__hx__e;
 			$error = $_ex_;
-			{
-			}
+			{}
 		}
 		$this->finishSuccess();
 	}

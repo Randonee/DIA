@@ -4,11 +4,16 @@ class sys_db_Object {
 	public function __construct() {
 		if(!php_Boot::$skip_constructor) {
 		if($this->_manager === null) {
-			$this->_manager = Type::getClass($this)->manager;
+			$this->_manager = $this->__getManager();
 		}
 	}}
 	public $_lock;
 	public $_manager;
+	public $__cache__;
+	public function __getManager() {
+		$cls = Type::getClass($this);
+		return $cls->manager;
+	}
 	public function insert() {
 		$this->_manager->doInsert($this);
 	}

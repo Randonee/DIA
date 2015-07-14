@@ -21,16 +21,19 @@ EReg.prototype.match = function(s) {
 	return this.r.m != null;
 };
 EReg.prototype.matched = function(n) {
-	if(this.r.m != null && n >= 0 && n < this.r.m.length) return this.r.m[n]; else throw "EReg::matched";
+	if(this.r.m != null && n >= 0 && n < this.r.m.length) return this.r.m[n]; else throw new js._Boot.HaxeError("EReg::matched");
 };
 EReg.prototype.matchedRight = function() {
-	if(this.r.m == null) throw "No string matched";
+	if(this.r.m == null) throw new js._Boot.HaxeError("No string matched");
 	var sz = this.r.m.index + this.r.m[0].length;
-	return this.r.s.substr(sz,this.r.s.length - sz);
+	return HxOverrides.substr(this.r.s,sz,this.r.s.length - sz);
 };
 EReg.prototype.matchedPos = function() {
-	if(this.r.m == null) throw "No string matched";
+	if(this.r.m == null) throw new js._Boot.HaxeError("No string matched");
 	return { pos : this.r.m.index, len : this.r.m[0].length};
+};
+EReg.prototype.replace = function(s,by) {
+	return s.replace(this.r,by);
 };
 EReg.prototype.__class__ = EReg;
 EReg.prototype.__properties__ = {};
@@ -140,29 +143,35 @@ List.prototype.isEmpty = function() {
 	return this.h == null;
 };
 List.prototype.iterator = function() {
-	return { h : this.h, hasNext : function() {
-		return this.h != null;
-	}, next : function() {
-		if(this.h == null) return null;
-		var x = this.h[0];
-		this.h = this.h[1];
-		return x;
-	}};
+	return new _List.ListIterator(this.h);
 };
 List.prototype.__class__ = List;
 List.prototype.__properties__ = {};
-IMap = $hxClasses['IMap'] = function() { };
-IMap.__name__ = ["IMap"];
-IMap.prototype.get = null;
-IMap.prototype.set = null;
-IMap.prototype.__class__ = IMap;
-IMap.prototype.__properties__ = {};
+_List.ListIterator = $hxClasses['_List.ListIterator'] = function(head) {
+	this.head = head;
+	this.val = null;
+};
+_List.ListIterator.__name__ = ["_List","ListIterator"];
+_List.ListIterator.prototype.head = null;
+_List.ListIterator.prototype.val = null;
+_List.ListIterator.prototype.hasNext = function() {
+	return this.head != null;
+};
+_List.ListIterator.prototype.next = function() {
+	this.val = this.head[0];
+	this.head = this.head[1];
+	return this.val;
+};
+_List.ListIterator.prototype.__class__ = _List.ListIterator;
+_List.ListIterator.prototype.__properties__ = {};
 Reflect = $hxClasses['Reflect'] = function() { };
 Reflect.__name__ = ["Reflect"];
 Reflect.field = function(o,field) {
 	try {
 		return o[field];
 	} catch( e ) {
+		haxe.CallStack.lastException = e;
+		if (e instanceof js._Boot.HaxeError) e = e.val;
 		return null;
 	}
 };
@@ -176,6 +185,9 @@ Reflect.getProperty = function(o,field) {
 Reflect.setProperty = function(o,field,value) {
 	var tmp;
 	if(o.__properties__ && (tmp = o.__properties__["set_" + field])) o[tmp](value); else o[field] = value;
+};
+Reflect.callMethod = function(o,func,args) {
+	return func.apply(o,args);
 };
 Reflect.fields = function(o) {
 	var a = [];
@@ -231,6 +243,7 @@ StringBuf = $hxClasses['StringBuf'] = function() {
 };
 StringBuf.__name__ = ["StringBuf"];
 StringBuf.prototype.b = null;
+StringBuf.prototype.length = null;
 StringBuf.prototype.add = function(x) {
 	this.b += Std.string(x);
 };
@@ -247,6 +260,25 @@ StringTools.__name__ = ["StringTools"];
 StringTools.htmlEscape = function(s,quotes) {
 	s = s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
 	if(quotes) return s.split("\"").join("&quot;").split("'").join("&#039;"); else return s;
+};
+StringTools.isSpace = function(s,pos) {
+	var c = HxOverrides.cca(s,pos);
+	return c > 8 && c < 14 || c == 32;
+};
+StringTools.ltrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,r)) r++;
+	if(r > 0) return HxOverrides.substr(s,r,l - r); else return s;
+};
+StringTools.rtrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
+	if(r > 0) return HxOverrides.substr(s,0,l - r); else return s;
+};
+StringTools.trim = function(s) {
+	return StringTools.ltrim(StringTools.rtrim(s));
 };
 StringTools.replace = function(s,sub,by) {
 	return s.split(sub).join(by);
@@ -283,14 +315,14 @@ ValueType.TBool.__enum__ = ValueType;
 Type = $hxClasses['Type'] = function() { };
 Type.__name__ = ["Type"];
 Type.getClass = function(o) {
-	if(o == null) return null;
-	if((o instanceof Array) && o.__enum__ == null) return Array; else return o.__class__;
+	if(o == null) return null; else return js.Boot.getClass(o);
 };
 Type.getSuperClass = function(c) {
 	return c.__super__;
 };
 Type.getClassName = function(c) {
 	var a = c.__name__;
+	if(a == null) return null;
 	return a.join(".");
 };
 Type.resolveClass = function(name) {
@@ -320,7 +352,7 @@ Type.createInstance = function(cl,args) {
 	case 8:
 		return new cl(args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
 	default:
-		throw "Too many arguments";
+		throw new js._Boot.HaxeError("Too many arguments");
 	}
 	return null;
 };
@@ -349,8 +381,7 @@ Type["typeof"] = function(v) {
 		if(v == null) return ValueType.TNull;
 		var e = v.__enum__;
 		if(e != null) return ValueType.TEnum(e);
-		var c;
-		if((v instanceof Array) && v.__enum__ == null) c = Array; else c = v.__class__;
+		var c = js.Boot.getClass(v);
 		if(c != null) return ValueType.TClass(c);
 		return ValueType.TObject;
 	case "function":
@@ -364,179 +395,125 @@ Type["typeof"] = function(v) {
 };
 Type.prototype.__class__ = Type;
 Type.prototype.__properties__ = {};
-XmlType = $hxClasses['XmlType'] = { __ename__ : ["XmlType"], __constructs__ : [] };
-Xml = $hxClasses['Xml'] = function() {
+Xml = $hxClasses['Xml'] = function(nodeType) {
+	this.nodeType = nodeType;
+	this.children = [];
+	this.attributeMap = new haxe.ds.StringMap();
 };
 Xml.__name__ = ["Xml"];
-Xml.Element = null;
-Xml.PCData = null;
-Xml.CData = null;
-Xml.Comment = null;
-Xml.DocType = null;
-Xml.ProcessingInstruction = null;
-Xml.Document = null;
 Xml.parse = function(str) {
 	return haxe.xml.Parser.parse(str);
 };
 Xml.createElement = function(name) {
-	var r = new Xml();
-	r.nodeType = Xml.Element;
-	r._children = new Array();
-	r._attributes = new haxe.ds.StringMap();
-	r.set_nodeName(name);
-	return r;
+	var xml = new Xml(Xml.Element);
+	if(xml.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element but found " + xml.nodeType);
+	xml.nodeName = name;
+	return xml;
 };
 Xml.createPCData = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.PCData;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.PCData);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js._Boot.HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createCData = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.CData;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.CData);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js._Boot.HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createComment = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.Comment;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.Comment);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js._Boot.HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createDocType = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.DocType;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.DocType);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js._Boot.HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createProcessingInstruction = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.ProcessingInstruction;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.ProcessingInstruction);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw new js._Boot.HaxeError("Bad node type, unexpected " + xml.nodeType);
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createDocument = function() {
-	var r = new Xml();
-	r.nodeType = Xml.Document;
-	r._children = new Array();
-	return r;
+	return new Xml(Xml.Document);
 };
 Xml.prototype.nodeType = null;
-Xml.prototype._nodeName = null;
-Xml.prototype._nodeValue = null;
-Xml.prototype._attributes = null;
-Xml.prototype._children = null;
-Xml.prototype._parent = null;
+Xml.prototype.nodeName = null;
+Xml.prototype.nodeValue = null;
+Xml.prototype.parent = null;
+Xml.prototype.children = null;
+Xml.prototype.attributeMap = null;
 Xml.prototype.get_nodeName = function() {
-	if(this.nodeType != Xml.Element) throw "bad nodeType";
-	return this._nodeName;
+	if(this.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element but found " + this.nodeType);
+	return this.nodeName;
 };
-Xml.prototype.set_nodeName = function(n) {
-	if(this.nodeType != Xml.Element) throw "bad nodeType";
-	return this._nodeName = n;
-};
-Xml.prototype.set_nodeValue = function(v) {
-	if(this.nodeType == Xml.Element || this.nodeType == Xml.Document) throw "bad nodeType";
-	return this._nodeValue = v;
+Xml.prototype.get = function(att) {
+	if(this.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element but found " + this.nodeType);
+	return this.attributeMap.get(att);
 };
 Xml.prototype.set = function(att,value) {
-	if(this.nodeType != Xml.Element) throw "bad nodeType";
-	this._attributes.set(att,value);
+	if(this.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element but found " + this.nodeType);
+	this.attributeMap.set(att,value);
 };
 Xml.prototype.exists = function(att) {
-	if(this.nodeType != Xml.Element) throw "bad nodeType";
-	return this._attributes.exists(att);
+	if(this.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element but found " + this.nodeType);
+	return this.attributeMap.exists(att);
+};
+Xml.prototype.attributes = function() {
+	if(this.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element but found " + this.nodeType);
+	return this.attributeMap.keys();
 };
 Xml.prototype.iterator = function() {
-	if(this._children == null) throw "bad nodetype";
-	return { cur : 0, x : this._children, hasNext : function() {
-		return this.cur < this.x.length;
-	}, next : function() {
-		return this.x[this.cur++];
-	}};
+	if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+	return HxOverrides.iter(this.children);
 };
 Xml.prototype.elements = function() {
-	if(this._children == null) throw "bad nodetype";
-	return { cur : 0, x : this._children, hasNext : function() {
-		var k = this.cur;
-		var l = this.x.length;
-		while(k < l) {
-			if(this.x[k].nodeType == Xml.Element) break;
-			k += 1;
-		}
-		this.cur = k;
-		return k < l;
-	}, next : function() {
-		var k1 = this.cur;
-		var l1 = this.x.length;
-		while(k1 < l1) {
-			var n = this.x[k1];
-			k1 += 1;
-			if(n.nodeType == Xml.Element) {
-				this.cur = k1;
-				return n;
-			}
-		}
-		return null;
-	}};
+	if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+	var ret;
+	var _g = [];
+	var _g1 = 0;
+	var _g2 = this.children;
+	while(_g1 < _g2.length) {
+		var child = _g2[_g1];
+		++_g1;
+		if(child.nodeType == Xml.Element) _g.push(child);
+	}
+	ret = _g;
+	return HxOverrides.iter(ret);
 };
 Xml.prototype.firstElement = function() {
-	if(this._children == null) throw "bad nodetype";
-	var cur = 0;
-	var l = this._children.length;
-	while(cur < l) {
-		var n = this._children[cur];
-		if(n.nodeType == Xml.Element) return n;
-		cur++;
+	if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+	var _g = 0;
+	var _g1 = this.children;
+	while(_g < _g1.length) {
+		var child = _g1[_g];
+		++_g;
+		if(child.nodeType == Xml.Element) return child;
 	}
 	return null;
 };
 Xml.prototype.addChild = function(x) {
-	if(this._children == null) throw "bad nodetype";
-	if(x._parent != null) HxOverrides.remove(x._parent._children,x);
-	x._parent = this;
-	this._children.push(x);
+	if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+	if(x.parent != null) x.parent.removeChild(x);
+	this.children.push(x);
+	x.parent = this;
 };
-Xml.prototype.toString = function() {
-	if(this.nodeType == Xml.PCData) return StringTools.htmlEscape(this._nodeValue);
-	if(this.nodeType == Xml.CData) return "<![CDATA[" + this._nodeValue + "]]>";
-	if(this.nodeType == Xml.Comment) return "<!--" + this._nodeValue + "-->";
-	if(this.nodeType == Xml.DocType) return "<!DOCTYPE " + this._nodeValue + ">";
-	if(this.nodeType == Xml.ProcessingInstruction) return "<?" + this._nodeValue + "?>";
-	var s = new StringBuf();
-	if(this.nodeType == Xml.Element) {
-		s.b += "<";
-		s.b += Std.string(this._nodeName);
-		var $it0 = this._attributes.keys();
-		while( $it0.hasNext() ) {
-			var k = $it0.next();
-			s.b += " ";
-			if(k == null) s.b += "null"; else s.b += "" + k;
-			s.b += "=\"";
-			s.add(this._attributes.get(k));
-			s.b += "\"";
-		}
-		if(this._children.length == 0) {
-			s.b += "/>";
-			return s.b;
-		}
-		s.b += ">";
+Xml.prototype.removeChild = function(x) {
+	if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element or Document but found " + this.nodeType);
+	if(HxOverrides.remove(this.children,x)) {
+		x.parent = null;
+		return true;
 	}
-	var $it1 = this.iterator();
-	while( $it1.hasNext() ) {
-		var x = $it1.next();
-		s.add(x.toString());
-	}
-	if(this.nodeType == Xml.Element) {
-		s.b += "</";
-		s.b += Std.string(this._nodeName);
-		s.b += ">";
-	}
-	return s.b;
+	return false;
 };
 Xml.prototype.__class__ = Xml;
-Xml.prototype.__properties__ = {get_nodeName:"get_nodeName", set_nodeName:"set_nodeName", set_nodeValue:"set_nodeValue"};
+Xml.prototype.__properties__ = {get_nodeName:"get_nodeName"};
 dia.client.ApplicationBase = $hxClasses['dia.client.ApplicationBase'] = function(view) {
 	this.injector = new minject.Injector();
 	this.commandMap = new dia.client.CommandMap(this.injector);
@@ -855,8 +832,10 @@ dia.js.JSView.prototype.reloadTemplate = function(props) {
 	try {
 		div.innerHTML = t.execute(this,{ add : $bind(this,this.add)});
 	} catch( error ) {
+		haxe.CallStack.lastException = error;
+		if (error instanceof js._Boot.HaxeError) error = error.val;
 		haxe.Log.trace("Template Error: Probably missing a class. Make sure that all external js files that contain classes are included",{ fileName : "JSView.hx", lineNumber : 118, className : "dia.js.JSView", methodName : "reloadTemplate"});
-		throw error;
+		throw new js._Boot.HaxeError(error);
 	}
 	if(this.element == null) this.element = div.firstChild; else {
 		var temp = div.firstChild;
@@ -870,7 +849,7 @@ dia.js.JSView.prototype.reloadTemplate = function(props) {
 		var child = _g11[_g1];
 		++_g1;
 		var childNode = this.getElement(child.viewId);
-		if(childNode == null) throw "Child not found: " + Type.getClassName(Type.getClass(child)) + ":" + child.viewId + ". TEMPLATE may need to be set"; else childNode.parentElement.replaceChild(child.element,childNode);
+		if(childNode == null) throw new js._Boot.HaxeError("Child not found: " + Type.getClassName(child == null?null:js.Boot.getClass(child)) + ":" + child.viewId + ". TEMPLATE may need to be set"); else childNode.parentElement.replaceChild(child.element,childNode);
 	}
 };
 dia.js.JSView.prototype.getValue = function(obj,fieldChain) {
@@ -1121,6 +1100,8 @@ dia.model.service.HttpServiceRequester.prototype.onComplete = function(jsonData)
 	try {
 		this.response = dia.util.ConversionUtil.toDomainObject(JSON.parse(jsonData));
 	} catch( error ) {
+		haxe.CallStack.lastException = error;
+		if (error instanceof js._Boot.HaxeError) error = error.val;
 	}
 	this.finishSuccess();
 };
@@ -1149,6 +1130,9 @@ dia.net.ClientSession.prototype.__class__ = dia.net.ClientSession;
 dia.net.ClientSession.prototype.__properties__ = {get_token:"get_token", set_token:"set_token"};
 dia.net.IUrlMonitor = $hxClasses['dia.net.IUrlMonitor'] = function() { };
 dia.net.IUrlMonitor.__name__ = ["dia","net","IUrlMonitor"];
+dia.net.IUrlMonitor.prototype.get_available = null;
+dia.net.IUrlMonitor.prototype.get_acceptableStatusCodes = null;
+dia.net.IUrlMonitor.prototype.set_acceptableStatusCodes = null;
 dia.net.IUrlMonitor.prototype.statusChange = null;
 dia.net.IUrlMonitor.prototype.available = null;
 dia.net.IUrlMonitor.prototype.urlChecked = null;
@@ -1157,7 +1141,7 @@ dia.net.IUrlMonitor.prototype.acceptableStatusCodes = null;
 dia.net.IUrlMonitor.prototype.start = null;
 dia.net.IUrlMonitor.prototype.checkStatus = null;
 dia.net.IUrlMonitor.prototype.__class__ = dia.net.IUrlMonitor;
-dia.net.IUrlMonitor.prototype.__properties__ = {};
+dia.net.IUrlMonitor.prototype.__properties__ = {get_available:"get_available", get_acceptableStatusCodes:"get_acceptableStatusCodes", set_acceptableStatusCodes:"set_acceptableStatusCodes"};
 dia.net.UrlMonitor = $hxClasses['dia.net.UrlMonitor'] = function(url) {
 	this._available = true;
 	this.urlChecked = false;
@@ -1211,11 +1195,11 @@ dia.terminal.Terminal = $hxClasses['dia.terminal.Terminal'] = function(injector)
 dia.terminal.Terminal.__name__ = ["dia","terminal","Terminal"];
 dia.terminal.Terminal._instance = null;
 dia.terminal.Terminal.getInstance = function() {
-	if(dia.terminal.Terminal._instance == null) throw "Must call Terminal.init() before usage";
+	if(dia.terminal.Terminal._instance == null) throw new js._Boot.HaxeError("Must call Terminal.init() before usage");
 	return dia.terminal.Terminal._instance;
 };
 dia.terminal.Terminal.init = function(injector) {
-	if(injector == null) throw "Injector can not be null";
+	if(injector == null) throw new js._Boot.HaxeError("Injector can not be null");
 	dia.terminal.Terminal._instance = new dia.terminal.Terminal(injector);
 };
 dia.terminal.Terminal.prototype.log = null;
@@ -1232,10 +1216,10 @@ dia.terminal.Terminal.prototype.clear = function() {
 };
 dia.terminal.Terminal.prototype.startTimer = function(timerID) {
 	var value = haxe.Timer.stamp();
-	this.timers.set(timerID,value);
+	this.timers.h[timerID] = value;
 };
 dia.terminal.Terminal.prototype.outTime = function(timerID) {
-	var time = haxe.Timer.stamp() - this.timers.get(timerID);
+	var time = haxe.Timer.stamp() - this.timers.h[timerID];
 	this.print("Timer " + timerID + ": " + (time == null?"null":"" + time) + "s, " + (time == null?"null":"" + time) + "ms",null,{ fileName : "Terminal.hx", lineNumber : 83, className : "dia.terminal.Terminal", methodName : "outTime"});
 	return time;
 };
@@ -1278,7 +1262,7 @@ dia.terminal.Terminal.prototype.executeInstrunction = function(command) {
 	var parts = command.split(",");
 	var name = parts[0];
 	var args;
-	if(parts.length > 1) args = parts.splice(1,parts.length); else args = new Array();
+	if(parts.length > 1) args = parts.splice(1,parts.length); else args = [];
 	if(name == "help" || name == "?") {
 		this.out.dispatch("---- Command Syntax ----",null);
 		this.out.dispatch("Enter the command name and arguments separated by commas.",null);
@@ -1302,6 +1286,8 @@ dia.terminal.Terminal.prototype.executeInstrunction = function(command) {
 		var instruction1 = this.injector.instantiate(instructionClass);
 		instruction1.execute(args);
 	} catch( error ) {
+		haxe.CallStack.lastException = error;
+		if (error instanceof js._Boot.HaxeError) error = error.val;
 		this.out.dispatch(error,null);
 	}
 };
@@ -1329,7 +1315,7 @@ dia.util.CollectionUtil.update = function(collection,obj) {
 	}
 };
 dia.util.CollectionUtil.insertAt = function(collection,obj,index) {
-	if(index < 0 || index > collection.length) throw "index is out of range";
+	if(index < 0 || index > collection.length) throw new js._Boot.HaxeError("index is out of range");
 	if(index == collection.length) collection.push(obj); else if(index == 0) collection.unshift(obj); else {
 		var temp = collection.slice(0,index - 1);
 		temp.push(obj);
@@ -1362,7 +1348,7 @@ dia.util.CollectionUtil.removeById = function(collection,uid) {
 	return obj;
 };
 dia.util.CollectionUtil.removeItemAt = function(collection,index) {
-	if(index < 0 || index >= collection.length) throw "Index is out of range";
+	if(index < 0 || index >= collection.length) throw new js._Boot.HaxeError("Index is out of range");
 	var obj = collection.splice(index,1)[0];
 	return obj;
 };
@@ -1380,6 +1366,7 @@ dia.util.CollectionUtil.prototype.__properties__ = {};
 dia.util.ConversionUtil = $hxClasses['dia.util.ConversionUtil'] = function() { };
 dia.util.ConversionUtil.__name__ = ["dia","util","ConversionUtil"];
 dia.util.ConversionUtil.toTransferObject = function(domainObject) {
+	if(domainObject.getDTO != null) return domainObject.getDTO();
 	if(dia.util.ObjectUtil.isIterable(domainObject)) {
 		var arr = [];
 		var iterator = $iterator(domainObject)();
@@ -1441,7 +1428,7 @@ dia.util.ConversionUtil.toTransferObject = function(domainObject) {
 };
 dia.util.ConversionUtil.toDomainObject = function(object) {
 	if(dia.util.ObjectUtil.isIterable(object)) {
-		var collection = new Array();
+		var collection = [];
 		var iterator = $iterator(object)();
 		while( iterator.hasNext() ) {
 			var subObj = iterator.next();
@@ -1480,7 +1467,7 @@ dia.util.ConversionUtil.toDomainObject = function(object) {
 			if(fieldValue != null) switch(fieldType[1]) {
 			case 4:case 6:
 				if(dia.util.ObjectUtil.isIterable(fieldValue)) {
-					var collection1 = new Array();
+					var collection1 = [];
 					var iterator1 = $iterator(fieldValue)();
 					while( iterator1.hasNext() ) {
 						var subObj1 = iterator1.next();
@@ -1555,7 +1542,7 @@ dia.util.ObjectUtil = $hxClasses['dia.util.ObjectUtil'] = function() { };
 dia.util.ObjectUtil.__name__ = ["dia","util","ObjectUtil"];
 dia.util.ObjectUtil.deepCopy = function(v) {
 	if(!Reflect.isObject(v)) return v; else if((v instanceof Array) && v.__enum__ == null) {
-		var r = Type.createInstance(Type.getClass(v),[]);
+		var r = Type.createInstance(v == null?null:js.Boot.getClass(v),[]);
 		var _g1 = 0;
 		var _g = v.length;
 		while(_g1 < _g) {
@@ -1563,7 +1550,7 @@ dia.util.ObjectUtil.deepCopy = function(v) {
 			r.push(dia.util.ObjectUtil.deepCopy(v[ii]));
 		}
 		return r;
-	} else if(Type.getClass(v) == null) {
+	} else if((v == null?null:js.Boot.getClass(v)) == null) {
 		var obj = { };
 		var _g2 = 0;
 		var _g11 = Reflect.fields(v);
@@ -1574,7 +1561,7 @@ dia.util.ObjectUtil.deepCopy = function(v) {
 		}
 		return obj;
 	} else {
-		var obj1 = Type.createEmptyInstance(Type.getClass(v));
+		var obj1 = Type.createEmptyInstance(v == null?null:js.Boot.getClass(v));
 		var _g3 = 0;
 		var _g12 = Reflect.fields(v);
 		while(_g3 < _g12.length) {
@@ -1608,6 +1595,8 @@ dia.util.ObjectUtil.getPhpString = function(obj) {
 		if(obj.b != null) return obj.b;
 		return obj;
 	} catch( error ) {
+		haxe.CallStack.lastException = error;
+		if (error instanceof js._Boot.HaxeError) error = error.val;
 		if( js.Boot.__instanceof(error,String) ) {
 		} else throw(error);
 	}
@@ -1617,8 +1606,8 @@ dia.util.ObjectUtil.isIterable = function(value) {
 	if(value == null) return false;
 	var fieldClass = Type.getClass(value);
 	if(fieldClass != null) {
-		var fieldTypeName = Type.getClassName(fieldClass);
-		if(fieldTypeName == "String") return false;
+		var fieldTypeName1 = Type.getClassName(fieldClass);
+		if(fieldTypeName1 == "String") return false;
 	}
 	var field = Reflect.field(value,"iterator");
 	if(field != null && Reflect.isFunction(field)) return true;
@@ -1628,9 +1617,9 @@ dia.util.ObjectUtil.isIterable = function(value) {
 		if(field != null && Reflect.isFunction(field)) return true;
 	}
 	var fieldClass1 = Type.getClass(value);
-	var fieldTypeName1 = "";
-	if(fieldClass1 != null) fieldTypeName1 = Type.getClassName(fieldClass1);
-	if(fieldTypeName1 == "Array") return true;
+	var fieldTypeName = "";
+	if(fieldClass1 != null) fieldTypeName = Type.getClassName(fieldClass1);
+	if(fieldTypeName == "Array") return true;
 	return false;
 };
 dia.util.ObjectUtil.prototype.__class__ = dia.util.ObjectUtil;
@@ -1671,7 +1660,7 @@ dia.util.Settings.prototype.addSettingRecursive = function(setting,path,value) {
 };
 dia.util.Settings.prototype.get = function(path) {
 	var setting = this.getSettingRecursive(this._rootSetting,path.split("."));
-	if(setting == null) throw "Settings path not found: " + path;
+	if(setting == null) throw new js._Boot.HaxeError("Settings path not found: " + path);
 	return setting;
 };
 dia.util.Settings.prototype.getSettingRecursive = function(setting,path) {
@@ -1722,11 +1711,68 @@ haxe.StackItem.CFunction.toString = $estr;
 haxe.StackItem.CFunction.__enum__ = haxe.StackItem;
 haxe.CallStack = $hxClasses['haxe.CallStack'] = function() { };
 haxe.CallStack.__name__ = ["haxe","CallStack"];
+haxe.CallStack.lastException = null;
+haxe.CallStack.getStack = function(e) {
+	if(e == null) return [];
+	var oldValue = Error.prepareStackTrace;
+	Error.prepareStackTrace = function(error,callsites) {
+		var stack = [];
+		var _g = 0;
+		while(_g < callsites.length) {
+			var site = callsites[_g];
+			++_g;
+			if(haxe.CallStack.wrapCallSite != null) site = haxe.CallStack.wrapCallSite(site);
+			var method = null;
+			var fullName = site.getFunctionName();
+			if(fullName != null) {
+				var idx = fullName.lastIndexOf(".");
+				if(idx >= 0) {
+					var className = HxOverrides.substr(fullName,0,idx);
+					var methodName = HxOverrides.substr(fullName,idx + 1,null);
+					method = haxe.StackItem.Method(className,methodName);
+				}
+			}
+			stack.push(haxe.StackItem.FilePos(method,site.getFileName(),site.getLineNumber()));
+		}
+		return stack;
+	};
+	var a = haxe.CallStack.makeStack(e.stack);
+	Error.prepareStackTrace = oldValue;
+	return a;
+};
+haxe.CallStack.wrapCallSite = null;
 haxe.CallStack.exceptionStack = function() {
-	return [];
+	return haxe.CallStack.getStack(haxe.CallStack.lastException);
+};
+haxe.CallStack.makeStack = function(s) {
+	if(s == null) return []; else if(typeof(s) == "string") {
+		var stack = s.split("\n");
+		if(stack[0] == "Error") stack.shift();
+		var m = [];
+		var rie10 = new EReg("^   at ([A-Za-z0-9_. ]+) \\(([^)]+):([0-9]+):([0-9]+)\\)$","");
+		var _g = 0;
+		while(_g < stack.length) {
+			var line = stack[_g];
+			++_g;
+			if(rie10.match(line)) {
+				var path = rie10.matched(1).split(".");
+				var meth = path.pop();
+				var file = rie10.matched(2);
+				var line1 = Std.parseInt(rie10.matched(3));
+				m.push(haxe.StackItem.FilePos(meth == "Anonymous function"?haxe.StackItem.LocalFunction():meth == "Global code"?null:haxe.StackItem.Method(path.join("."),meth),file,line1));
+			} else m.push(haxe.StackItem.Module(StringTools.trim(line)));
+		}
+		return m;
+	} else return s;
 };
 haxe.CallStack.prototype.__class__ = haxe.CallStack;
 haxe.CallStack.prototype.__properties__ = {};
+haxe.IMap = $hxClasses['haxe.IMap'] = function() { };
+haxe.IMap.__name__ = ["haxe","IMap"];
+haxe.IMap.prototype.get = null;
+haxe.IMap.prototype.set = null;
+haxe.IMap.prototype.__class__ = haxe.IMap;
+haxe.IMap.prototype.__properties__ = {};
 haxe.Http = $hxClasses['haxe.Http'] = function(url) {
 	this.url = url;
 	this.headers = new List();
@@ -1765,7 +1811,15 @@ haxe.Http.prototype.request = function(post) {
 		try {
 			s = r.status;
 		} catch( e ) {
+			haxe.CallStack.lastException = e;
+			if (e instanceof js._Boot.HaxeError) e = e.val;
 			s = null;
+		}
+		if(s != null) {
+			var protocol = window.location.protocol.toLowerCase();
+			var rlocalProtocol = new EReg("^(?:about|app|app-storage|.+-extension|file|res|widget):$","");
+			var isLocal = rlocalProtocol.match(protocol);
+			if(isLocal) if(r.responseText != null) s = 200; else s = 404;
 		}
 		if(s == undefined) s = null;
 		if(s != null) me.onStatus(s);
@@ -1793,9 +1847,17 @@ haxe.Http.prototype.request = function(post) {
 	if(this.async) r.onreadystatechange = onreadystatechange;
 	var uri = this.postData;
 	if(uri != null) post = true; else {
-		var $it0 = this.params.iterator();
-		while( $it0.hasNext() ) {
-			var p = $it0.next();
+		var _g_head = this.params.h;
+		var _g_val = null;
+		while(_g_head != null) {
+			var p;
+			p = (function($this) {
+				var $r;
+				_g_val = _g_head[0];
+				_g_head = _g_head[1];
+				$r = _g_val;
+				return $r;
+			}(this));
 			if(uri == null) uri = ""; else uri += "&";
 			uri += encodeURIComponent(p.param) + "=" + encodeURIComponent(p.value);
 		}
@@ -1807,6 +1869,8 @@ haxe.Http.prototype.request = function(post) {
 			uri = null;
 		} else r.open("GET",this.url,this.async);
 	} catch( e1 ) {
+		haxe.CallStack.lastException = e1;
+		if (e1 instanceof js._Boot.HaxeError) e1 = e1.val;
 		me.req = null;
 		this.onError(e1.toString());
 		return;
@@ -1814,9 +1878,17 @@ haxe.Http.prototype.request = function(post) {
 	if(!Lambda.exists(this.headers,function(h) {
 		return h.header == "Content-Type";
 	}) && post && this.postData == null) r.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-	var $it1 = this.headers.iterator();
-	while( $it1.hasNext() ) {
-		var h1 = $it1.next();
+	var _g_head1 = this.headers.h;
+	var _g_val1 = null;
+	while(_g_head1 != null) {
+		var h1;
+		h1 = (function($this) {
+			var $r;
+			_g_val1 = _g_head1[0];
+			_g_head1 = _g_head1[1];
+			$r = _g_val1;
+			return $r;
+		}(this));
 		r.setRequestHeader(h1.header,h1.value);
 	}
 	r.send(uri);
@@ -1830,6 +1902,15 @@ haxe.Http.prototype.onStatus = function(status) {
 };
 haxe.Http.prototype.__class__ = haxe.Http;
 haxe.Http.prototype.__properties__ = {};
+haxe._Int64.___Int64 = $hxClasses['haxe._Int64.___Int64'] = function(high,low) {
+	this.high = high;
+	this.low = low;
+};
+haxe._Int64.___Int64.__name__ = ["haxe","_Int64","___Int64"];
+haxe._Int64.___Int64.prototype.high = null;
+haxe._Int64.___Int64.prototype.low = null;
+haxe._Int64.___Int64.prototype.__class__ = haxe._Int64.___Int64;
+haxe._Int64.___Int64.prototype.__properties__ = {};
 haxe.Log = $hxClasses['haxe.Log'] = function() { };
 haxe.Log.__name__ = ["haxe","Log"];
 haxe.Log.trace = function(v,infos) {
@@ -1848,7 +1929,7 @@ haxe._Template.TemplateExpr.OpVar = function(v) { var $x = ["OpVar",0,v]; $x.__e
 haxe.Template = $hxClasses['haxe.Template'] = function(str) {
 	var tokens = this.parseTokens(str);
 	this.expr = this.parseBlock(tokens);
-	if(!tokens.isEmpty()) throw "Unexpected '" + Std.string(tokens.first().s) + "'";
+	if(!tokens.isEmpty()) throw new js._Boot.HaxeError("Unexpected '" + Std.string(tokens.first().s) + "'");
 };
 haxe.Template.__name__ = ["haxe","Template"];
 haxe.Template.prototype.expr = null;
@@ -1866,9 +1947,13 @@ haxe.Template.prototype.execute = function(context,macros) {
 };
 haxe.Template.prototype.resolve = function(v) {
 	if(Object.prototype.hasOwnProperty.call(this.context,v)) return Reflect.field(this.context,v);
-	var $it0 = this.stack.iterator();
-	while( $it0.hasNext() ) {
-		var ctx = $it0.next();
+	var _g_head = this.stack.h;
+	var _g_val = null;
+	while(_g_head != null) {
+		var ctx;
+		_g_val = _g_head[0];
+		_g_head = _g_head[1];
+		ctx = _g_val;
 		if(Object.prototype.hasOwnProperty.call(ctx,v)) return Reflect.field(ctx,v);
 	}
 	if(v == "__current__") return this.context;
@@ -1894,7 +1979,7 @@ haxe.Template.prototype.parseTokens = function(data) {
 			if(c == 40) npar++; else if(c == 41) {
 				npar--;
 				if(npar <= 0) break;
-			} else if(c == null) throw "Unclosed macro parenthesis";
+			} else if(c == null) throw new js._Boot.HaxeError("Unclosed macro parenthesis");
 			if(c == 44 && npar == 1) {
 				params.push(part);
 				part = "";
@@ -1939,7 +2024,7 @@ haxe.Template.prototype.parse = function(tokens) {
 		var eif = this.parseBlock(tokens);
 		var t1 = tokens.first();
 		var eelse;
-		if(t1 == null) throw "Unclosed 'if'";
+		if(t1 == null) throw new js._Boot.HaxeError("Unclosed 'if'");
 		if(t1.p == "end") {
 			tokens.pop();
 			eelse = null;
@@ -1947,7 +2032,7 @@ haxe.Template.prototype.parse = function(tokens) {
 			tokens.pop();
 			eelse = this.parseBlock(tokens);
 			t1 = tokens.pop();
-			if(t1 == null || t1.p != "end") throw "Unclosed 'else'";
+			if(t1 == null || t1.p != "end") throw new js._Boot.HaxeError("Unclosed 'else'");
 		} else {
 			t1.p = HxOverrides.substr(t1.p,4,t1.p.length - 4);
 			eelse = this.parse(tokens);
@@ -1959,7 +2044,7 @@ haxe.Template.prototype.parse = function(tokens) {
 		var e1 = this.parseExpr(p);
 		var efor = this.parseBlock(tokens);
 		var t2 = tokens.pop();
-		if(t2 == null || t2.p != "end") throw "Unclosed 'foreach'";
+		if(t2 == null || t2.p != "end") throw new js._Boot.HaxeError("Unclosed 'foreach'");
 		return haxe._Template.TemplateExpr.OpForeach(e1,efor);
 	}
 	if(haxe.Template.expr_splitter.match(p)) return haxe._Template.TemplateExpr.OpExpr(this.parseExpr(p));
@@ -1980,17 +2065,21 @@ haxe.Template.prototype.parseExpr = function(data) {
 	var e;
 	try {
 		e = this.makeExpr(l);
-		if(!l.isEmpty()) throw l.first().p;
+		if(!l.isEmpty()) throw new js._Boot.HaxeError(l.first().p);
 	} catch( s ) {
+		haxe.CallStack.lastException = s;
+		if (s instanceof js._Boot.HaxeError) s = s.val;
 		if( js.Boot.__instanceof(s,String) ) {
-			throw "Unexpected '" + s + "' in " + expr;
+			throw new js._Boot.HaxeError("Unexpected '" + s + "' in " + expr);
 		} else throw(s);
 	}
 	return function() {
 		try {
 			return e();
 		} catch( exc ) {
-			throw "Error : " + Std.string(exc) + " in " + expr;
+			haxe.CallStack.lastException = exc;
+			if (exc instanceof js._Boot.HaxeError) exc = exc.val;
+			throw new js._Boot.HaxeError("Error : " + Std.string(exc) + " in " + expr);
 		}
 	};
 };
@@ -2010,7 +2099,7 @@ haxe.Template.prototype.makeConst = function(v) {
 		};
 	}
 	if(haxe.Template.expr_float.match(v)) {
-		var f = Std.parseFloat(v);
+		var f = parseFloat(v);
 		return function() {
 			return f;
 		};
@@ -2025,7 +2114,7 @@ haxe.Template.prototype.makePath = function(e,l) {
 	if(p == null || p.p != ".") return e;
 	l.pop();
 	var field = l.pop();
-	if(field == null || !field.s) throw field.p;
+	if(field == null || !field.s) throw new js._Boot.HaxeError(field.p);
 	var f = field.p;
 	haxe.Template.expr_trim.match(f);
 	f = haxe.Template.expr_trim.matched(1);
@@ -2038,18 +2127,18 @@ haxe.Template.prototype.makeExpr = function(l) {
 };
 haxe.Template.prototype.makeExpr2 = function(l) {
 	var p = l.pop();
-	if(p == null) throw "<eof>";
+	if(p == null) throw new js._Boot.HaxeError("<eof>");
 	if(p.s) return this.makeConst(p.p);
 	var _g = p.p;
 	switch(_g) {
 	case "(":
 		var e1 = this.makeExpr(l);
 		var p1 = l.pop();
-		if(p1 == null || p1.s) throw p1.p;
+		if(p1 == null || p1.s) throw new js._Boot.HaxeError(p1.p);
 		if(p1.p == ")") return e1;
 		var e2 = this.makeExpr(l);
 		var p2 = l.pop();
-		if(p2 == null || p2.p != ")") throw p2.p;
+		if(p2 == null || p2.p != ")") throw new js._Boot.HaxeError(p2.p);
 		var _g1 = p1.p;
 		switch(_g1) {
 		case "+":
@@ -2101,7 +2190,7 @@ haxe.Template.prototype.makeExpr2 = function(l) {
 				return e1() || e2();
 			};
 		default:
-			throw "Unknown operation " + p1.p;
+			throw new js._Boot.HaxeError("Unknown operation " + p1.p);
 		}
 		break;
 	case "!":
@@ -2116,7 +2205,7 @@ haxe.Template.prototype.makeExpr2 = function(l) {
 			return -e3();
 		};
 	}
-	throw p.p;
+	throw new js._Boot.HaxeError(p.p);
 };
 haxe.Template.prototype.run = function(e) {
 	switch(e[1]) {
@@ -2143,9 +2232,17 @@ haxe.Template.prototype.run = function(e) {
 		break;
 	case 4:
 		var l = e[2];
-		var $it0 = l.iterator();
-		while( $it0.hasNext() ) {
-			var e3 = $it0.next();
+		var _g_head = l.h;
+		var _g_val = null;
+		while(_g_head != null) {
+			var e3;
+			e3 = (function($this) {
+				var $r;
+				_g_val = _g_head[0];
+				_g_head = _g_head[1];
+				$r = _g_val;
+				return $r;
+			}(this));
 			this.run(e3);
 		}
 		break;
@@ -2155,13 +2252,17 @@ haxe.Template.prototype.run = function(e) {
 		var v2 = e4();
 		try {
 			var x = $iterator(v2)();
-			if(x.hasNext == null) throw null;
+			if(x.hasNext == null) throw new js._Boot.HaxeError(null);
 			v2 = x;
 		} catch( e5 ) {
+			haxe.CallStack.lastException = e5;
+			if (e5 instanceof js._Boot.HaxeError) e5 = e5.val;
 			try {
-				if(v2.hasNext == null) throw null;
+				if(v2.hasNext == null) throw new js._Boot.HaxeError(null);
 			} catch( e6 ) {
-				throw "Cannot iter on " + Std.string(v2);
+				haxe.CallStack.lastException = e6;
+				if (e6 instanceof js._Boot.HaxeError) e6 = e6.val;
+				throw new js._Boot.HaxeError("Cannot iter on " + Std.string(v2));
 			}
 		}
 		this.stack.push(this.context);
@@ -2177,12 +2278,20 @@ haxe.Template.prototype.run = function(e) {
 		var params = e[3];
 		var m = e[2];
 		var v4 = Reflect.field(this.macros,m);
-		var pl = new Array();
+		var pl = [];
 		var old = this.buf;
 		pl.push($bind(this,this.resolve));
-		var $it1 = params.iterator();
-		while( $it1.hasNext() ) {
-			var p = $it1.next();
+		var _g_head1 = params.h;
+		var _g_val1 = null;
+		while(_g_head1 != null) {
+			var p;
+			p = (function($this) {
+				var $r;
+				_g_val1 = _g_head1[0];
+				_g_head1 = _g_head1[1];
+				$r = _g_val1;
+				return $r;
+			}(this));
 			switch(p[1]) {
 			case 0:
 				var v5 = p[2];
@@ -2196,16 +2305,20 @@ haxe.Template.prototype.run = function(e) {
 		}
 		this.buf = old;
 		try {
-			this.buf.add(Std.string(v4.apply(this.macros,pl)));
+			this.buf.add(Std.string(Reflect.callMethod(this.macros,v4,pl)));
 		} catch( e7 ) {
+			haxe.CallStack.lastException = e7;
+			if (e7 instanceof js._Boot.HaxeError) e7 = e7.val;
 			var plstr;
 			try {
 				plstr = pl.join(",");
 			} catch( e8 ) {
+				haxe.CallStack.lastException = e8;
+				if (e8 instanceof js._Boot.HaxeError) e8 = e8.val;
 				plstr = "???";
 			}
 			var msg = "Macro call " + m + "(" + plstr + ") failed (" + Std.string(e7) + ")";
-			throw msg;
+			throw new js._Boot.HaxeError(msg);
 		}
 		break;
 	}
@@ -2232,7 +2345,7 @@ haxe.ds.IntMap.prototype.get = function(key) {
 };
 haxe.ds.IntMap.prototype.__class__ = haxe.ds.IntMap;
 haxe.ds.IntMap.prototype.__properties__ = {};
-haxe.ds.IntMap.__interfaces__ = [IMap];
+haxe.ds.IntMap.__interfaces__ = [haxe.IMap];
 haxe.ds.ObjectMap = $hxClasses['haxe.ds.ObjectMap'] = function() {
 	this.h = { };
 	this.h.__keys__ = { };
@@ -2256,46 +2369,122 @@ haxe.ds.ObjectMap.prototype.remove = function(key) {
 };
 haxe.ds.ObjectMap.prototype.__class__ = haxe.ds.ObjectMap;
 haxe.ds.ObjectMap.prototype.__properties__ = {};
-haxe.ds.ObjectMap.__interfaces__ = [IMap];
+haxe.ds.ObjectMap.__interfaces__ = [haxe.IMap];
 haxe.ds.StringMap = $hxClasses['haxe.ds.StringMap'] = function() {
 	this.h = { };
 };
 haxe.ds.StringMap.__name__ = ["haxe","ds","StringMap"];
 haxe.ds.StringMap.prototype.h = null;
+haxe.ds.StringMap.prototype.rh = null;
 haxe.ds.StringMap.prototype.set = function(key,value) {
-	this.h["$" + key] = value;
+	if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
 };
 haxe.ds.StringMap.prototype.get = function(key) {
-	return this.h["$" + key];
+	if(__map_reserved[key] != null) return this.getReserved(key);
+	return this.h[key];
 };
 haxe.ds.StringMap.prototype.exists = function(key) {
-	return this.h.hasOwnProperty("$" + key);
+	if(__map_reserved[key] != null) return this.existsReserved(key);
+	return this.h.hasOwnProperty(key);
+};
+haxe.ds.StringMap.prototype.setReserved = function(key,value) {
+	if(this.rh == null) this.rh = { };
+	this.rh["$" + key] = value;
+};
+haxe.ds.StringMap.prototype.getReserved = function(key) {
+	if(this.rh == null) return null; else return this.rh["$" + key];
+};
+haxe.ds.StringMap.prototype.existsReserved = function(key) {
+	if(this.rh == null) return false;
+	return this.rh.hasOwnProperty("$" + key);
 };
 haxe.ds.StringMap.prototype.keys = function() {
-	var a = [];
+	var _this = this.arrayKeys();
+	return HxOverrides.iter(_this);
+};
+haxe.ds.StringMap.prototype.arrayKeys = function() {
+	var out = [];
 	for( var key in this.h ) {
-	if(this.h.hasOwnProperty(key)) a.push(key.substr(1));
+	if(this.h.hasOwnProperty(key)) out.push(key);
 	}
-	return HxOverrides.iter(a);
+	if(this.rh != null) {
+		for( var key in this.rh ) {
+		if(key.charCodeAt(0) == 36) out.push(key.substr(1));
+		}
+	}
+	return out;
 };
 haxe.ds.StringMap.prototype.__class__ = haxe.ds.StringMap;
 haxe.ds.StringMap.prototype.__properties__ = {};
-haxe.ds.StringMap.__interfaces__ = [IMap];
-haxe.io.Eof = $hxClasses['haxe.io.Eof'] = function() { };
-haxe.io.Eof.__name__ = ["haxe","io","Eof"];
-haxe.io.Eof.prototype.toString = function() {
-	return "Eof";
+haxe.ds.StringMap.__interfaces__ = [haxe.IMap];
+haxe.io.Error = $hxClasses['haxe.io.Error'] = { __ename__ : ["haxe","io","Error"], __constructs__ : ["Blocked","Overflow","OutsideBounds","Custom"] };
+haxe.io.Error.Custom = function(e) { var $x = ["Custom",3,e]; $x.__enum__ = haxe.io.Error; $x.toString = $estr; return $x; };
+haxe.io.Error.Blocked = ["Blocked",0];
+haxe.io.Error.Blocked.toString = $estr;
+haxe.io.Error.Blocked.__enum__ = haxe.io.Error;
+haxe.io.Error.Overflow = ["Overflow",1];
+haxe.io.Error.Overflow.toString = $estr;
+haxe.io.Error.Overflow.__enum__ = haxe.io.Error;
+haxe.io.Error.OutsideBounds = ["OutsideBounds",2];
+haxe.io.Error.OutsideBounds.toString = $estr;
+haxe.io.Error.OutsideBounds.__enum__ = haxe.io.Error;
+haxe.io.FPHelper = $hxClasses['haxe.io.FPHelper'] = function() { };
+haxe.io.FPHelper.__name__ = ["haxe","io","FPHelper"];
+haxe.io.FPHelper.i32ToFloat = function(i) {
+	var sign = 1 - (i >>> 31 << 1);
+	var exp = i >>> 23 & 255;
+	var sig = i & 8388607;
+	if(sig == 0 && exp == 0) return 0.0;
+	return sign * (1 + Math.pow(2,-23) * sig) * Math.pow(2,exp - 127);
 };
-haxe.io.Eof.prototype.__class__ = haxe.io.Eof;
-haxe.io.Eof.prototype.__properties__ = {};
+haxe.io.FPHelper.floatToI32 = function(f) {
+	if(f == 0) return 0;
+	var af;
+	if(f < 0) af = -f; else af = f;
+	var exp = Math.floor(Math.log(af) / 0.6931471805599453);
+	if(exp < -127) exp = -127; else if(exp > 128) exp = 128;
+	var sig = Math.round((af / Math.pow(2,exp) - 1) * 8388608) & 8388607;
+	return (f < 0?-2147483648:0) | exp + 127 << 23 | sig;
+};
+haxe.io.FPHelper.i64ToDouble = function(low,high) {
+	var sign = 1 - (high >>> 31 << 1);
+	var exp = (high >> 20 & 2047) - 1023;
+	var sig = (high & 1048575) * 4294967296. + (low >>> 31) * 2147483648. + (low & 2147483647);
+	if(sig == 0 && exp == -1023) return 0.0;
+	return sign * (1.0 + Math.pow(2,-52) * sig) * Math.pow(2,exp);
+};
+haxe.io.FPHelper.doubleToI64 = function(v) {
+	var i64 = haxe.io.FPHelper.i64tmp;
+	if(v == 0) {
+		i64.low = 0;
+		i64.high = 0;
+	} else {
+		var av;
+		if(v < 0) av = -v; else av = v;
+		var exp = Math.floor(Math.log(av) / 0.6931471805599453);
+		var sig;
+		var v1 = (av / Math.pow(2,exp) - 1) * 4503599627370496.;
+		sig = Math.round(v1);
+		var sig_l = sig | 0;
+		var sig_h = sig / 4294967296.0 | 0;
+		i64.low = sig_l;
+		i64.high = (v < 0?-2147483648:0) | exp + 1023 << 20 | sig_h;
+	}
+	return i64;
+};
+haxe.io.FPHelper.prototype.__class__ = haxe.io.FPHelper;
+haxe.io.FPHelper.prototype.__properties__ = {};
 haxe.rtti.Meta = $hxClasses['haxe.rtti.Meta'] = function() { };
 haxe.rtti.Meta.__name__ = ["haxe","rtti","Meta"];
 haxe.rtti.Meta.getType = function(t) {
-	var meta = t.__meta__;
+	var meta = haxe.rtti.Meta.getMeta(t);
 	if(meta == null || meta.obj == null) return { }; else return meta.obj;
 };
+haxe.rtti.Meta.getMeta = function(t) {
+	return t.__meta__;
+};
 haxe.rtti.Meta.getFields = function(t) {
-	var meta = t.__meta__;
+	var meta = haxe.rtti.Meta.getMeta(t);
 	if(meta == null || meta.fields == null) return { }; else return meta.fields;
 };
 haxe.rtti.Meta.prototype.__class__ = haxe.rtti.Meta;
@@ -2336,7 +2525,7 @@ haxe.xml._Fast.NodeListAccess.prototype.__x = null;
 haxe.xml._Fast.NodeListAccess.prototype.__class__ = haxe.xml._Fast.NodeListAccess;
 haxe.xml._Fast.NodeListAccess.prototype.__properties__ = {};
 haxe.xml.Fast = $hxClasses['haxe.xml.Fast'] = function(x) {
-	if(x.nodeType != Xml.Document && x.nodeType != Xml.Element) throw "Invalid nodeType " + Std.string(x.nodeType);
+	if(x.nodeType != Xml.Document && x.nodeType != Xml.Element) throw new js._Boot.HaxeError("Invalid nodeType " + x.nodeType);
 	this.x = x;
 	this.node = new haxe.xml._Fast.NodeAccess(x);
 	this.nodes = new haxe.xml._Fast.NodeListAccess(x);
@@ -2359,7 +2548,7 @@ haxe.xml.Fast.prototype.get_innerHTML = function() {
 	var $it0 = this.x.iterator();
 	while( $it0.hasNext() ) {
 		var x = $it0.next();
-		s.add(x.toString());
+		s.add(haxe.xml.Printer.print(x));
 	}
 	return s.b;
 };
@@ -2375,12 +2564,13 @@ haxe.xml.Fast.prototype.__class__ = haxe.xml.Fast;
 haxe.xml.Fast.prototype.__properties__ = {get_name:"get_name", get_innerHTML:"get_innerHTML", get_elements:"get_elements"};
 haxe.xml.Parser = $hxClasses['haxe.xml.Parser'] = function() { };
 haxe.xml.Parser.__name__ = ["haxe","xml","Parser"];
-haxe.xml.Parser.parse = function(str) {
+haxe.xml.Parser.parse = function(str,strict) {
+	if(strict == null) strict = false;
 	var doc = Xml.createDocument();
-	haxe.xml.Parser.doParse(str,0,doc);
+	haxe.xml.Parser.doParse(str,strict,0,doc);
 	return doc;
 };
-haxe.xml.Parser.doParse = function(str,p,parent) {
+haxe.xml.Parser.doParse = function(str,strict,p,parent) {
 	if(p == null) p = 0;
 	var xml = null;
 	var state = 1;
@@ -2391,6 +2581,8 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 	var nbrackets = 0;
 	var c = str.charCodeAt(p);
 	var buf = new StringBuf();
+	var escapeNext = 1;
+	var attrValQuote = -1;
 	while(!(c != c)) {
 		switch(state) {
 		case 0:
@@ -2416,7 +2608,8 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			break;
 		case 13:
 			if(c == 60) {
-				var child = Xml.createPCData(buf.b + HxOverrides.substr(str,start,p - start));
+				buf.addSub(str,start,p - start);
+				var child = Xml.createPCData(buf.b);
 				buf = new StringBuf();
 				parent.addChild(child);
 				nsubs++;
@@ -2425,7 +2618,7 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			} else if(c == 38) {
 				buf.addSub(str,start,p - start);
 				state = 18;
-				next = 13;
+				escapeNext = 13;
 				start = p + 1;
 			}
 			break;
@@ -2443,16 +2636,16 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			case 33:
 				if(str.charCodeAt(p + 1) == 91) {
 					p += 2;
-					if(HxOverrides.substr(str,p,6).toUpperCase() != "CDATA[") throw "Expected <![CDATA[";
+					if(HxOverrides.substr(str,p,6).toUpperCase() != "CDATA[") throw new js._Boot.HaxeError("Expected <![CDATA[");
 					p += 5;
 					state = 17;
 					start = p + 1;
 				} else if(str.charCodeAt(p + 1) == 68 || str.charCodeAt(p + 1) == 100) {
-					if(HxOverrides.substr(str,p + 2,6).toUpperCase() != "OCTYPE") throw "Expected <!DOCTYPE";
+					if(HxOverrides.substr(str,p + 2,6).toUpperCase() != "OCTYPE") throw new js._Boot.HaxeError("Expected <!DOCTYPE");
 					p += 8;
 					state = 16;
 					start = p + 1;
-				} else if(str.charCodeAt(p + 1) != 45 || str.charCodeAt(p + 2) != 45) throw "Expected <!--"; else {
+				} else if(str.charCodeAt(p + 1) != 45 || str.charCodeAt(p + 2) != 45) throw new js._Boot.HaxeError("Expected <!--"); else {
 					p += 2;
 					state = 15;
 					start = p + 1;
@@ -2463,7 +2656,7 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 				start = p;
 				break;
 			case 47:
-				if(parent == null) throw "Expected node name";
+				if(parent == null) throw new js._Boot.HaxeError("Expected node name");
 				start = p + 1;
 				state = 0;
 				next = 10;
@@ -2476,9 +2669,10 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			break;
 		case 3:
 			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
-				if(p == start) throw "Expected node name";
+				if(p == start) throw new js._Boot.HaxeError("Expected node name");
 				xml = Xml.createElement(HxOverrides.substr(str,start,p - start));
 				parent.addChild(xml);
+				nsubs++;
 				state = 0;
 				next = 4;
 				continue;
@@ -2488,11 +2682,9 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			switch(c) {
 			case 47:
 				state = 11;
-				nsubs++;
 				break;
 			case 62:
 				state = 9;
-				nsubs++;
 				break;
 			default:
 				state = 5;
@@ -2503,10 +2695,10 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 		case 5:
 			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
 				var tmp;
-				if(start == p) throw "Expected attribute name";
+				if(start == p) throw new js._Boot.HaxeError("Expected attribute name");
 				tmp = HxOverrides.substr(str,start,p - start);
 				aname = tmp;
-				if(xml.exists(aname)) throw "Duplicate attribute";
+				if(xml.exists(aname)) throw new js._Boot.HaxeError("Duplicate attribute");
 				state = 0;
 				next = 6;
 				continue;
@@ -2519,29 +2711,62 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 				next = 7;
 				break;
 			default:
-				throw "Expected =";
+				throw new js._Boot.HaxeError("Expected =");
 			}
 			break;
 		case 7:
 			switch(c) {
 			case 34:case 39:
+				buf = new StringBuf();
 				state = 8;
-				start = p;
+				start = p + 1;
+				attrValQuote = c;
 				break;
 			default:
-				throw "Expected \"";
+				throw new js._Boot.HaxeError("Expected \"");
 			}
 			break;
 		case 8:
-			if(c == str.charCodeAt(start)) {
-				var val = HxOverrides.substr(str,start + 1,p - start - 1);
-				xml.set(aname,val);
-				state = 0;
-				next = 4;
+			switch(c) {
+			case 38:
+				buf.addSub(str,start,p - start);
+				state = 18;
+				escapeNext = 8;
+				start = p + 1;
+				break;
+			case 62:
+				if(strict) throw new js._Boot.HaxeError("Invalid unescaped " + String.fromCharCode(c) + " in attribute value"); else if(c == attrValQuote) {
+					buf.addSub(str,start,p - start);
+					var val = buf.b;
+					buf = new StringBuf();
+					xml.set(aname,val);
+					state = 0;
+					next = 4;
+				}
+				break;
+			case 60:
+				if(strict) throw new js._Boot.HaxeError("Invalid unescaped " + String.fromCharCode(c) + " in attribute value"); else if(c == attrValQuote) {
+					buf.addSub(str,start,p - start);
+					var val1 = buf.b;
+					buf = new StringBuf();
+					xml.set(aname,val1);
+					state = 0;
+					next = 4;
+				}
+				break;
+			default:
+				if(c == attrValQuote) {
+					buf.addSub(str,start,p - start);
+					var val2 = buf.b;
+					buf = new StringBuf();
+					xml.set(aname,val2);
+					state = 0;
+					next = 4;
+				}
 			}
 			break;
 		case 9:
-			p = haxe.xml.Parser.doParse(str,p,xml);
+			p = haxe.xml.Parser.doParse(str,strict,p,xml);
 			start = p;
 			state = 1;
 			break;
@@ -2551,7 +2776,7 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 				state = 1;
 				break;
 			default:
-				throw "Expected >";
+				throw new js._Boot.HaxeError("Expected >");
 			}
 			break;
 		case 12:
@@ -2560,14 +2785,24 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 				if(nsubs == 0) parent.addChild(Xml.createPCData(""));
 				return p;
 			default:
-				throw "Expected >";
+				throw new js._Boot.HaxeError("Expected >");
 			}
 			break;
 		case 10:
 			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
-				if(start == p) throw "Expected node name";
+				if(start == p) throw new js._Boot.HaxeError("Expected node name");
 				var v = HxOverrides.substr(str,start,p - start);
-				if(v != parent.get_nodeName()) throw "Expected </" + parent.get_nodeName() + ">";
+				if(v != (function($this) {
+					var $r;
+					if(parent.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element but found " + parent.nodeType);
+					$r = parent.nodeName;
+					return $r;
+				}(this))) throw new js._Boot.HaxeError("Expected </" + (function($this) {
+					var $r;
+					if(parent.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + parent.nodeType;
+					$r = parent.nodeName;
+					return $r;
+				}(this)) + ">");
 				state = 0;
 				next = 12;
 				continue;
@@ -2575,14 +2810,18 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			break;
 		case 15:
 			if(c == 45 && str.charCodeAt(p + 1) == 45 && str.charCodeAt(p + 2) == 62) {
-				parent.addChild(Xml.createComment(HxOverrides.substr(str,start,p - start)));
+				var xml1 = Xml.createComment(HxOverrides.substr(str,start,p - start));
+				parent.addChild(xml1);
+				nsubs++;
 				p += 2;
 				state = 1;
 			}
 			break;
 		case 16:
 			if(c == 91) nbrackets++; else if(c == 93) nbrackets--; else if(c == 62 && nbrackets == 0) {
-				parent.addChild(Xml.createDocType(HxOverrides.substr(str,start,p - start)));
+				var xml2 = Xml.createDocType(HxOverrides.substr(str,start,p - start));
+				parent.addChild(xml2);
+				nsubs++;
 				state = 1;
 			}
 			break;
@@ -2590,7 +2829,9 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			if(c == 63 && str.charCodeAt(p + 1) == 62) {
 				p++;
 				var str1 = HxOverrides.substr(str,start + 1,p - start - 2);
-				parent.addChild(Xml.createProcessingInstruction(str1));
+				var xml3 = Xml.createProcessingInstruction(str1);
+				parent.addChild(xml3);
+				nsubs++;
 				state = 1;
 			}
 			break;
@@ -2598,12 +2839,22 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 			if(c == 59) {
 				var s = HxOverrides.substr(str,start,p - start);
 				if(s.charCodeAt(0) == 35) {
-					var i;
-					if(s.charCodeAt(1) == 120) i = Std.parseInt("0" + HxOverrides.substr(s,1,s.length - 1)); else i = Std.parseInt(HxOverrides.substr(s,1,s.length - 1));
-					buf.add(String.fromCharCode(i));
-				} else if(!haxe.xml.Parser.escapes.exists(s)) buf.b += Std.string("&" + s + ";"); else buf.add(haxe.xml.Parser.escapes.get(s));
+					var c1;
+					if(s.charCodeAt(1) == 120) c1 = Std.parseInt("0" + HxOverrides.substr(s,1,s.length - 1)); else c1 = Std.parseInt(HxOverrides.substr(s,1,s.length - 1));
+					buf.b += String.fromCharCode(c1);
+				} else if(!haxe.xml.Parser.escapes.exists(s)) {
+					if(strict) throw new js._Boot.HaxeError("Undefined entity: " + s);
+					buf.b += Std.string("&" + s + ";");
+				} else buf.add(haxe.xml.Parser.escapes.get(s));
 				start = p + 1;
-				state = next;
+				state = escapeNext;
+			} else if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45) && c != 35) {
+				if(strict) throw new js._Boot.HaxeError("Invalid character in entity: " + String.fromCharCode(c));
+				buf.b += "&";
+				buf.addSub(str,start,p - start);
+				p--;
+				start = p + 1;
+				state = escapeNext;
 			}
 			break;
 		}
@@ -2614,13 +2865,187 @@ haxe.xml.Parser.doParse = function(str,p,parent) {
 		state = 13;
 	}
 	if(state == 13) {
-		if(p != start || nsubs == 0) parent.addChild(Xml.createPCData(buf.b + HxOverrides.substr(str,start,p - start)));
+		if(p != start || nsubs == 0) {
+			buf.addSub(str,start,p - start);
+			var xml4 = Xml.createPCData(buf.b);
+			parent.addChild(xml4);
+			nsubs++;
+		}
 		return p;
 	}
-	throw "Unexpected end";
+	if(!strict && state == 18 && escapeNext == 13) {
+		buf.b += "&";
+		buf.addSub(str,start,p - start);
+		var xml5 = Xml.createPCData(buf.b);
+		parent.addChild(xml5);
+		nsubs++;
+		return p;
+	}
+	throw new js._Boot.HaxeError("Unexpected end");
 };
 haxe.xml.Parser.prototype.__class__ = haxe.xml.Parser;
 haxe.xml.Parser.prototype.__properties__ = {};
+haxe.xml.Printer = $hxClasses['haxe.xml.Printer'] = function(pretty) {
+	this.output = new StringBuf();
+	this.pretty = pretty;
+};
+haxe.xml.Printer.__name__ = ["haxe","xml","Printer"];
+haxe.xml.Printer.print = function(xml,pretty) {
+	if(pretty == null) pretty = false;
+	var printer = new haxe.xml.Printer(pretty);
+	printer.writeNode(xml,"");
+	return printer.output.b;
+};
+haxe.xml.Printer.prototype.output = null;
+haxe.xml.Printer.prototype.pretty = null;
+haxe.xml.Printer.prototype.writeNode = function(value,tabs) {
+	var _g = value.nodeType;
+	switch(_g) {
+	case 2:
+		this.output.b += Std.string(tabs + "<![CDATA[");
+		this.write(StringTools.trim((function($this) {
+			var $r;
+			if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw new js._Boot.HaxeError("Bad node type, unexpected " + value.nodeType);
+			$r = value.nodeValue;
+			return $r;
+		}(this))));
+		this.output.b += "]]>";
+		if(this.pretty) this.output.b += "";
+		break;
+	case 3:
+		var commentContent;
+		if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw new js._Boot.HaxeError("Bad node type, unexpected " + value.nodeType);
+		commentContent = value.nodeValue;
+		commentContent = new EReg("[\n\r\t]+","g").replace(commentContent,"");
+		commentContent = "<!--" + commentContent + "-->";
+		if(tabs == null) this.output.b += "null"; else this.output.b += "" + tabs;
+		this.write(StringTools.trim(commentContent));
+		if(this.pretty) this.output.b += "";
+		break;
+	case 6:
+		var $it0 = (function($this) {
+			var $r;
+			if(value.nodeType != Xml.Document && value.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element or Document but found " + value.nodeType);
+			$r = HxOverrides.iter(value.children);
+			return $r;
+		}(this));
+		while( $it0.hasNext() ) {
+			var child = $it0.next();
+			this.writeNode(child,tabs);
+		}
+		break;
+	case 0:
+		this.output.b += Std.string(tabs + "<");
+		this.write((function($this) {
+			var $r;
+			if(value.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element but found " + value.nodeType);
+			$r = value.nodeName;
+			return $r;
+		}(this)));
+		var $it1 = value.attributes();
+		while( $it1.hasNext() ) {
+			var attribute = $it1.next();
+			this.output.b += Std.string(" " + attribute + "=\"");
+			this.write(StringTools.htmlEscape(value.get(attribute),true));
+			this.output.b += "\"";
+		}
+		if(this.hasChildren(value)) {
+			this.output.b += ">";
+			if(this.pretty) this.output.b += "";
+			var $it2 = (function($this) {
+				var $r;
+				if(value.nodeType != Xml.Document && value.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element or Document but found " + value.nodeType);
+				$r = HxOverrides.iter(value.children);
+				return $r;
+			}(this));
+			while( $it2.hasNext() ) {
+				var child1 = $it2.next();
+				this.writeNode(child1,this.pretty?tabs + "\t":tabs);
+			}
+			this.output.b += Std.string(tabs + "</");
+			this.write((function($this) {
+				var $r;
+				if(value.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element but found " + value.nodeType);
+				$r = value.nodeName;
+				return $r;
+			}(this)));
+			this.output.b += ">";
+			if(this.pretty) this.output.b += "";
+		} else {
+			this.output.b += "/>";
+			if(this.pretty) this.output.b += "";
+		}
+		break;
+	case 1:
+		var nodeValue;
+		if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw new js._Boot.HaxeError("Bad node type, unexpected " + value.nodeType);
+		nodeValue = value.nodeValue;
+		if(nodeValue.length != 0) {
+			this.write(tabs + StringTools.htmlEscape(nodeValue));
+			if(this.pretty) this.output.b += "";
+		}
+		break;
+	case 5:
+		this.write("<?" + (function($this) {
+			var $r;
+			if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw new js._Boot.HaxeError("Bad node type, unexpected " + value.nodeType);
+			$r = value.nodeValue;
+			return $r;
+		}(this)) + "?>");
+		break;
+	case 4:
+		this.write("<!DOCTYPE " + (function($this) {
+			var $r;
+			if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw new js._Boot.HaxeError("Bad node type, unexpected " + value.nodeType);
+			$r = value.nodeValue;
+			return $r;
+		}(this)) + ">");
+		break;
+	}
+};
+haxe.xml.Printer.prototype.write = function(input) {
+	if(input == null) this.output.b += "null"; else this.output.b += "" + input;
+};
+haxe.xml.Printer.prototype.hasChildren = function(value) {
+	var $it0 = (function($this) {
+		var $r;
+		if(value.nodeType != Xml.Document && value.nodeType != Xml.Element) throw new js._Boot.HaxeError("Bad node type, expected Element or Document but found " + value.nodeType);
+		$r = HxOverrides.iter(value.children);
+		return $r;
+	}(this));
+	while( $it0.hasNext() ) {
+		var child = $it0.next();
+		var _g = child.nodeType;
+		switch(_g) {
+		case 0:case 1:
+			return true;
+		case 2:case 3:
+			if(StringTools.ltrim((function($this) {
+				var $r;
+				if(child.nodeType == Xml.Document || child.nodeType == Xml.Element) throw new js._Boot.HaxeError("Bad node type, unexpected " + child.nodeType);
+				$r = child.nodeValue;
+				return $r;
+			}(this))).length != 0) return true;
+			break;
+		default:
+		}
+	}
+	return false;
+};
+haxe.xml.Printer.prototype.__class__ = haxe.xml.Printer;
+haxe.xml.Printer.prototype.__properties__ = {};
+js._Boot.HaxeError = $hxClasses['js._Boot.HaxeError'] = function(val) {
+	Error.call(this);
+	this.val = val;
+	this.message = String(val);
+	if(Error.captureStackTrace) Error.captureStackTrace(this,js._Boot.HaxeError);
+};
+js._Boot.HaxeError.__name__ = ["js","_Boot","HaxeError"];
+js._Boot.HaxeError.__super__ = Error;
+for(var k in Error.prototype ) js._Boot.HaxeError.prototype[k] = Error.prototype[k];
+js._Boot.HaxeError.prototype.val = null;
+js._Boot.HaxeError.prototype.__class__ = js._Boot.HaxeError;
+js._Boot.HaxeError.prototype.__properties__ = $extend(Error.prototype.__properties__, {});
 js.Boot = $hxClasses['js.Boot'] = function() { };
 js.Boot.__name__ = ["js","Boot"];
 js.Boot.__unhtml = function(s) {
@@ -2643,7 +3068,13 @@ js.Boot.__trace = function(v,i) {
 	if(typeof(document) != "undefined" && (d = document.getElementById("haxe:trace")) != null) d.innerHTML += js.Boot.__unhtml(msg) + "<br/>"; else if(typeof console != "undefined" && console.log != null) console.log(msg);
 };
 js.Boot.getClass = function(o) {
-	if((o instanceof Array) && o.__enum__ == null) return Array; else return o.__class__;
+	if((o instanceof Array) && o.__enum__ == null) return Array; else {
+		var cl = o.__class__;
+		if(cl != null) return cl;
+		var name = js.Boot.__nativeClassName(o);
+		if(name != null) return js.Boot.__resolveNativeClass(name);
+		return null;
+	}
 };
 js.Boot.__string_rec = function(o,s) {
 	if(o == null) return "null";
@@ -2655,18 +3086,18 @@ js.Boot.__string_rec = function(o,s) {
 		if(o instanceof Array) {
 			if(o.__enum__) {
 				if(o.length == 2) return o[0];
-				var str = o[0] + "(";
+				var str2 = o[0] + "(";
 				s += "\t";
 				var _g1 = 2;
 				var _g = o.length;
 				while(_g1 < _g) {
-					var i = _g1++;
-					if(i != 2) str += "," + js.Boot.__string_rec(o[i],s); else str += js.Boot.__string_rec(o[i],s);
+					var i1 = _g1++;
+					if(i1 != 2) str2 += "," + js.Boot.__string_rec(o[i1],s); else str2 += js.Boot.__string_rec(o[i1],s);
 				}
-				return str + ")";
+				return str2 + ")";
 			}
 			var l = o.length;
-			var i1;
+			var i;
 			var str1 = "[";
 			s += "\t";
 			var _g2 = 0;
@@ -2681,14 +3112,16 @@ js.Boot.__string_rec = function(o,s) {
 		try {
 			tostr = o.toString;
 		} catch( e ) {
+			haxe.CallStack.lastException = e;
+			if (e instanceof js._Boot.HaxeError) e = e.val;
 			return "???";
 		}
-		if(tostr != null && tostr != Object.toString) {
+		if(tostr != null && tostr != Object.toString && typeof(tostr) == "function") {
 			var s2 = o.toString();
 			if(s2 != "[object Object]") return s2;
 		}
 		var k = null;
-		var str2 = "{\n";
+		var str = "{\n";
 		s += "\t";
 		var hasp = o.hasOwnProperty != null;
 		for( var k in o ) {
@@ -2698,12 +3131,12 @@ js.Boot.__string_rec = function(o,s) {
 		if(k == "prototype" || k == "__class__" || k == "__super__" || k == "__interfaces__" || k == "__properties__") {
 			continue;
 		}
-		if(str2.length != 2) str2 += ", \n";
-		str2 += s + k + " : " + js.Boot.__string_rec(o[k],s);
+		if(str.length != 2) str += ", \n";
+		str += s + k + " : " + js.Boot.__string_rec(o[k],s);
 		}
 		s = s.substring(1);
-		str2 += "\n" + s + "}";
-		return str2;
+		str += "\n" + s + "}";
+		return str;
 	case "function":
 		return "<function>";
 	case "string":
@@ -2747,6 +3180,8 @@ js.Boot.__instanceof = function(o,cl) {
 			if(typeof(cl) == "function") {
 				if(o instanceof cl) return true;
 				if(js.Boot.__interfLoop(js.Boot.getClass(o),cl)) return true;
+			} else if(typeof(cl) == "object" && js.Boot.__isNativeObj(cl)) {
+				if(o instanceof cl) return true;
 			}
 		} else return false;
 		if(cl == Class && o.__name__ != null) return true;
@@ -2754,14 +3189,31 @@ js.Boot.__instanceof = function(o,cl) {
 		return o.__enum__ == cl;
 	}
 };
+js.Boot.__nativeClassName = function(o) {
+	var name = js.Boot.__toStr.call(o).slice(8,-1);
+	if(name == "Object" || name == "Function" || name == "Math" || name == "JSON") return null;
+	return name;
+};
+js.Boot.__isNativeObj = function(o) {
+	return js.Boot.__nativeClassName(o) != null;
+};
+js.Boot.__resolveNativeClass = function(name) {
+	return (Function("return typeof " + name + " != \"undefined\" ? " + name + " : null"))();
+};
 js.Boot.prototype.__class__ = js.Boot;
 js.Boot.prototype.__properties__ = {};
 js.Browser = $hxClasses['js.Browser'] = function() { };
 js.Browser.__name__ = ["js","Browser"];
+js.Browser.window = null;
+js.Browser.document = null;
+js.Browser.location = null;
+js.Browser.navigator = null;
+js.Browser.console = null;
+js.Browser.supported = null;
 js.Browser.createXMLHttpRequest = function() {
 	if(typeof XMLHttpRequest != "undefined") return new XMLHttpRequest();
 	if(typeof ActiveXObject != "undefined") return new ActiveXObject("Microsoft.XMLHTTP");
-	throw "Unable to create XMLHttpRequest object.";
+	throw new js._Boot.HaxeError("Unable to create XMLHttpRequest object.");
 };
 js.Browser.prototype.__class__ = js.Browser;
 js.Browser.prototype.__properties__ = {};
@@ -2779,9 +3231,196 @@ js.Cookie.set = function(name,value,expireDelay,path,domain) {
 };
 js.Cookie.prototype.__class__ = js.Cookie;
 js.Cookie.prototype.__properties__ = {};
+js.html.compat.ArrayBuffer = $hxClasses['js.html.compat.ArrayBuffer'] = function(a) {
+	if((a instanceof Array) && a.__enum__ == null) {
+		this.a = a;
+		this.byteLength = a.length;
+	} else {
+		var len = a;
+		this.a = [];
+		var _g = 0;
+		while(_g < len) {
+			var i = _g++;
+			this.a[i] = 0;
+		}
+		this.byteLength = len;
+	}
+};
+js.html.compat.ArrayBuffer.__name__ = ["js","html","compat","ArrayBuffer"];
+js.html.compat.ArrayBuffer.sliceImpl = function(begin,end) {
+	var u = new Uint8Array(this,begin,end == null?null:end - begin);
+	var result = new ArrayBuffer(u.byteLength);
+	var resultArray = new Uint8Array(result);
+	resultArray.set(u);
+	return result;
+};
+js.html.compat.ArrayBuffer.prototype.byteLength = null;
+js.html.compat.ArrayBuffer.prototype.a = null;
+js.html.compat.ArrayBuffer.prototype.slice = function(begin,end) {
+	return new js.html.compat.ArrayBuffer(this.a.slice(begin,end));
+};
+js.html.compat.ArrayBuffer.prototype.__class__ = js.html.compat.ArrayBuffer;
+js.html.compat.ArrayBuffer.prototype.__properties__ = {};
+js.html.compat.DataView = $hxClasses['js.html.compat.DataView'] = function(buffer,byteOffset,byteLength) {
+	this.buf = buffer;
+	if(byteOffset == null) this.offset = 0; else this.offset = byteOffset;
+	if(byteLength == null) this.length = buffer.byteLength - this.offset; else this.length = byteLength;
+	if(this.offset < 0 || this.length < 0 || this.offset + this.length > buffer.byteLength) throw new js._Boot.HaxeError(haxe.io.Error.OutsideBounds);
+};
+js.html.compat.DataView.__name__ = ["js","html","compat","DataView"];
+js.html.compat.DataView.prototype.buf = null;
+js.html.compat.DataView.prototype.offset = null;
+js.html.compat.DataView.prototype.length = null;
+js.html.compat.DataView.prototype.getInt8 = function(byteOffset) {
+	var v = this.buf.a[this.offset + byteOffset];
+	if(v >= 128) return v - 256; else return v;
+};
+js.html.compat.DataView.prototype.getUint8 = function(byteOffset) {
+	return this.buf.a[this.offset + byteOffset];
+};
+js.html.compat.DataView.prototype.getInt16 = function(byteOffset,littleEndian) {
+	var v = this.getUint16(byteOffset,littleEndian);
+	if(v >= 32768) return v - 65536; else return v;
+};
+js.html.compat.DataView.prototype.getUint16 = function(byteOffset,littleEndian) {
+	if(littleEndian) return this.buf.a[this.offset + byteOffset] | this.buf.a[this.offset + byteOffset + 1] << 8; else return this.buf.a[this.offset + byteOffset] << 8 | this.buf.a[this.offset + byteOffset + 1];
+};
+js.html.compat.DataView.prototype.getInt32 = function(byteOffset,littleEndian) {
+	var p = this.offset + byteOffset;
+	var a = this.buf.a[p++];
+	var b = this.buf.a[p++];
+	var c = this.buf.a[p++];
+	var d = this.buf.a[p++];
+	if(littleEndian) return a | b << 8 | c << 16 | d << 24; else return d | c << 8 | b << 16 | a << 24;
+};
+js.html.compat.DataView.prototype.getUint32 = function(byteOffset,littleEndian) {
+	var v = this.getInt32(byteOffset,littleEndian);
+	if(v < 0) return v + 4294967296.; else return v;
+};
+js.html.compat.DataView.prototype.getFloat32 = function(byteOffset,littleEndian) {
+	return haxe.io.FPHelper.i32ToFloat(this.getInt32(byteOffset,littleEndian));
+};
+js.html.compat.DataView.prototype.getFloat64 = function(byteOffset,littleEndian) {
+	var a = this.getInt32(byteOffset,littleEndian);
+	var b = this.getInt32(byteOffset + 4,littleEndian);
+	return haxe.io.FPHelper.i64ToDouble(littleEndian?a:b,littleEndian?b:a);
+};
+js.html.compat.DataView.prototype.setInt8 = function(byteOffset,value) {
+	if(value < 0) this.buf.a[byteOffset + this.offset] = value + 128 & 255; else this.buf.a[byteOffset + this.offset] = value & 255;
+};
+js.html.compat.DataView.prototype.setUint8 = function(byteOffset,value) {
+	this.buf.a[byteOffset + this.offset] = value & 255;
+};
+js.html.compat.DataView.prototype.setInt16 = function(byteOffset,value,littleEndian) {
+	this.setUint16(byteOffset,value < 0?value + 65536:value,littleEndian);
+};
+js.html.compat.DataView.prototype.setUint16 = function(byteOffset,value,littleEndian) {
+	var p = byteOffset + this.offset;
+	if(littleEndian) {
+		this.buf.a[p] = value & 255;
+		this.buf.a[p++] = value >> 8 & 255;
+	} else {
+		this.buf.a[p++] = value >> 8 & 255;
+		this.buf.a[p] = value & 255;
+	}
+};
+js.html.compat.DataView.prototype.setInt32 = function(byteOffset,value,littleEndian) {
+	this.setUint32(byteOffset,value,littleEndian);
+};
+js.html.compat.DataView.prototype.setUint32 = function(byteOffset,value,littleEndian) {
+	var p = byteOffset + this.offset;
+	if(littleEndian) {
+		this.buf.a[p++] = value & 255;
+		this.buf.a[p++] = value >> 8 & 255;
+		this.buf.a[p++] = value >> 16 & 255;
+		this.buf.a[p++] = value >>> 24;
+	} else {
+		this.buf.a[p++] = value >>> 24;
+		this.buf.a[p++] = value >> 16 & 255;
+		this.buf.a[p++] = value >> 8 & 255;
+		this.buf.a[p++] = value & 255;
+	}
+};
+js.html.compat.DataView.prototype.setFloat32 = function(byteOffset,value,littleEndian) {
+	this.setUint32(byteOffset,haxe.io.FPHelper.floatToI32(value),littleEndian);
+};
+js.html.compat.DataView.prototype.setFloat64 = function(byteOffset,value,littleEndian) {
+	var i64 = haxe.io.FPHelper.doubleToI64(value);
+	if(littleEndian) {
+		this.setUint32(byteOffset,i64.low);
+		this.setUint32(byteOffset,i64.high);
+	} else {
+		this.setUint32(byteOffset,i64.high);
+		this.setUint32(byteOffset,i64.low);
+	}
+};
+js.html.compat.DataView.prototype.__class__ = js.html.compat.DataView;
+js.html.compat.DataView.prototype.__properties__ = {};
+js.html.compat.Uint8Array = $hxClasses['js.html.compat.Uint8Array'] = function() { };
+js.html.compat.Uint8Array.__name__ = ["js","html","compat","Uint8Array"];
+js.html.compat.Uint8Array._new = function(arg1,offset,length) {
+	var arr;
+	if(typeof(arg1) == "number") {
+		arr = [];
+		var _g = 0;
+		while(_g < arg1) {
+			var i = _g++;
+			arr[i] = 0;
+		}
+		arr.byteLength = arr.length;
+		arr.byteOffset = 0;
+		arr.buffer = new js.html.compat.ArrayBuffer(arr);
+	} else if(js.Boot.__instanceof(arg1,js.html.compat.ArrayBuffer)) {
+		var buffer = arg1;
+		if(offset == null) offset = 0;
+		if(length == null) length = buffer.byteLength - offset;
+		if(offset == 0) arr = buffer.a; else arr = buffer.a.slice(offset,offset + length);
+		arr.byteLength = arr.length;
+		arr.byteOffset = offset;
+		arr.buffer = buffer;
+	} else if((arg1 instanceof Array) && arg1.__enum__ == null) {
+		arr = arg1.slice();
+		arr.byteLength = arr.length;
+		arr.byteOffset = 0;
+		arr.buffer = new js.html.compat.ArrayBuffer(arr);
+	} else throw new js._Boot.HaxeError("TODO " + Std.string(arg1));
+	arr.subarray = js.html.compat.Uint8Array._subarray;
+	arr.set = js.html.compat.Uint8Array._set;
+	return arr;
+};
+js.html.compat.Uint8Array._set = function(arg,offset) {
+	var t = this;
+	if(js.Boot.__instanceof(arg.buffer,js.html.compat.ArrayBuffer)) {
+		var a = arg;
+		if(arg.byteLength + offset > t.byteLength) throw new js._Boot.HaxeError("set() outside of range");
+		var _g1 = 0;
+		var _g = arg.byteLength;
+		while(_g1 < _g) {
+			var i = _g1++;
+			t[i + offset] = a[i];
+		}
+	} else if((arg instanceof Array) && arg.__enum__ == null) {
+		var a1 = arg;
+		if(a1.length + offset > t.byteLength) throw new js._Boot.HaxeError("set() outside of range");
+		var _g11 = 0;
+		var _g2 = a1.length;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			t[i1 + offset] = a1[i1];
+		}
+	} else throw new js._Boot.HaxeError("TODO");
+};
+js.html.compat.Uint8Array._subarray = function(start,end) {
+	var t = this;
+	var a = js.html.compat.Uint8Array._new(t.slice(start,end));
+	a.byteOffset = start;
+	return a;
+};
+js.html.compat.Uint8Array.prototype.__class__ = js.html.compat.Uint8Array;
+js.html.compat.Uint8Array.prototype.__properties__ = {};
 mcore.exception.Exception = $hxClasses['mcore.exception.Exception'] = function(message,cause,info) {
 	if(message == null) message = "";
-	this.name = Type.getClassName(Type.getClass(this));
+	this.name = Type.getClassName(js.Boot.getClass(this));
 	this.message = message;
 	this.cause = cause;
 	this.info = info;
@@ -2794,7 +3433,7 @@ mcore.exception.Exception.getStackTrace = function(source) {
 	var stack = haxe.CallStack.exceptionStack();
 	while(stack.length > 0) {
 		var _g = stack.shift();
-		switch(_g[1]) {
+		if(_g != null) switch(_g[1]) {
 		case 2:
 			var line = _g[4];
 			var file = _g[3];
@@ -2806,6 +3445,7 @@ mcore.exception.Exception.getStackTrace = function(source) {
 			s += "\tat " + classname + "#" + method + "\n";
 			break;
 		default:
+		} else {
 		}
 	}
 	return s;
@@ -2881,9 +3521,11 @@ mcore.util.Reflection.here = function(info) {
 mcore.util.Reflection.callMethod = function(o,func,args) {
 	if(args == null) args = [];
 	try {
-		return func.apply(o,args);
+		return Reflect.callMethod(o,func,args);
 	} catch( e ) {
-		throw new mcore.exception.Exception("Error calling method " + Type.getClassName(Type.getClass(o)) + "." + Std.string(func) + "(" + args.toString() + ")",e,{ fileName : "Reflection.hx", lineNumber : 111, className : "mcore.util.Reflection", methodName : "callMethod"});
+		haxe.CallStack.lastException = e;
+		if (e instanceof js._Boot.HaxeError) e = e.val;
+		throw new js._Boot.HaxeError(new mcore.exception.Exception("Error calling method " + Type.getClassName(Type.getClass(o)) + "." + Std.string(func) + "(" + args.toString() + ")",e,{ fileName : "Reflection.hx", lineNumber : 111, className : "mcore.util.Reflection", methodName : "callMethod"}));
 	}
 };
 mcore.util.Reflection.prototype.__class__ = mcore.util.Reflection;
@@ -2898,7 +3540,9 @@ mcore.util.Types.createInstance = function(forClass,args) {
 	try {
 		return Type.createInstance(forClass,args);
 	} catch( e ) {
-		throw new mcore.exception.Exception("Error creating instance of " + Type.getClassName(forClass) + "(" + args.toString() + ")",e,{ fileName : "Types.hx", lineNumber : 65, className : "mcore.util.Types", methodName : "createInstance"});
+		haxe.CallStack.lastException = e;
+		if (e instanceof js._Boot.HaxeError) e = e.val;
+		throw new js._Boot.HaxeError(new mcore.exception.Exception("Error creating instance of " + Type.getClassName(forClass) + "(" + args.toString() + ")",e,{ fileName : "Types.hx", lineNumber : 65, className : "mcore.util.Types", methodName : "createInstance"}));
 	}
 };
 mcore.util.Types.prototype.__class__ = mcore.util.Types;
@@ -3092,7 +3736,7 @@ minject.Injector.prototype.instantiate = function(theClass) {
 minject.Injector.prototype.unmap = function(theClass,named) {
 	if(named == null) named = "";
 	var mapping = this.getConfigurationForRequest(theClass,named);
-	if(mapping == null) throw "Error while removing an injector mapping: No mapping defined for class " + this.getClassName(theClass) + ", named \"" + named + "\"";
+	if(mapping == null) throw new js._Boot.HaxeError("Error while removing an injector mapping: No mapping defined for class " + this.getClassName(theClass) + ", named \"" + named + "\"");
 	mapping.setResult(null);
 };
 minject.Injector.prototype.hasMapping = function(forClass,named) {
@@ -3104,7 +3748,7 @@ minject.Injector.prototype.hasMapping = function(forClass,named) {
 minject.Injector.prototype.getInstance = function(ofClass,named) {
 	if(named == null) named = "";
 	var mapping = this.getConfigurationForRequest(ofClass,named);
-	if(mapping == null || !mapping.hasResponse(this)) throw "Error while getting mapping response: No mapping defined for class " + this.getClassName(ofClass) + ", named \"" + named + "\"";
+	if(mapping == null || !mapping.hasResponse(this)) throw new js._Boot.HaxeError("Error while getting mapping response: No mapping defined for class " + this.getClassName(ofClass) + ", named \"" + named + "\"");
 	return mapping.getResponse(this);
 };
 minject.Injector.prototype.createChildInjector = function() {
@@ -3123,7 +3767,7 @@ minject.Injector.prototype.getAncestorMapping = function(forClass,named) {
 };
 minject.Injector.prototype.getInjectionPoints = function(forClass) {
 	var typeMeta = haxe.rtti.Meta.getType(forClass);
-	if(typeMeta != null && Object.prototype.hasOwnProperty.call(typeMeta,"interface")) throw "Interfaces can't be used as instantiatable classes.";
+	if(typeMeta != null && Object.prototype.hasOwnProperty.call(typeMeta,"interface")) throw new js._Boot.HaxeError("Interfaces can't be used as instantiatable classes.");
 	var fieldsMeta = this.getFields(forClass);
 	var ctorInjectionPoint = null;
 	var injectionPoints = [];
@@ -3291,7 +3935,7 @@ minject.point.MethodInjectionPoint.prototype.gatherParameters = function(meta) {
 		if(i < nameArgs.length) injectionName = nameArgs[i];
 		var parameterTypeName = arg.type;
 		if(arg.opt) {
-			if(parameterTypeName == "Dynamic") throw "Error in method definition of injectee. Required parameters can't have non class type.";
+			if(parameterTypeName == "Dynamic") throw new js._Boot.HaxeError("Error in method definition of injectee. Required parameters can't have non class type.");
 		} else this.requiredParameters++;
 		this._parameterInjectionConfigs.push(new minject.point.ParameterInjectionConfig(parameterTypeName,injectionName));
 		i++;
@@ -3308,7 +3952,7 @@ minject.point.MethodInjectionPoint.prototype.gatherParameterValues = function(ta
 		var injection = config.getResponse(injector);
 		if(injection == null) {
 			if(i >= this.requiredParameters) break;
-			throw "Injector is missing a rule to handle injection into target " + Type.getClassName(Type.getClass(target)) + ". Target dependency: " + Type.getClassName(config.request) + ", method: " + this.methodName + ", parameter: " + (i + 1) + ", named: " + parameterConfig.injectionName;
+			throw new js._Boot.HaxeError("Injector is missing a rule to handle injection into target " + Type.getClassName(Type.getClass(target)) + ". Target dependency: " + Type.getClassName(config.request) + ", method: " + this.methodName + ", parameter: " + (i + 1) + ", named: " + parameterConfig.injectionName);
 		}
 		parameters[i] = injection;
 	}
@@ -3384,7 +4028,7 @@ minject.point.PropertyInjectionPoint.prototype.injectionName = null;
 minject.point.PropertyInjectionPoint.prototype.applyInjection = function(target,injector) {
 	var injectionConfig = injector.getMapping(Type.resolveClass(this.propertyType),this.injectionName);
 	var injection = injectionConfig.getResponse(injector);
-	if(injection == null) throw "Injector is missing a rule to handle injection into property \"" + this.propertyName + "\" of object \"" + Std.string(target) + "\". Target dependency: \"" + this.propertyType + "\", named \"" + this.injectionName + "\"";
+	if(injection == null) throw new js._Boot.HaxeError("Injector is missing a rule to handle injection into property \"" + this.propertyName + "\" of object \"" + Std.string(target) + "\". Target dependency: \"" + this.propertyType + "\", named \"" + this.injectionName + "\"");
 	Reflect.setProperty(target,this.propertyName,injection);
 	return target;
 };
@@ -3509,7 +4153,7 @@ msignal.Signal.prototype.registrationPossible = function(listener,once) {
 	if(!this.slots.nonEmpty) return true;
 	var existingSlot = this.slots.find(listener);
 	if(existingSlot == null) return true;
-	if(existingSlot.once != once) throw "You cannot addOnce() then add() the same listener without removing the relationship first.";
+	if(existingSlot.once != once) throw new js._Boot.HaxeError("You cannot addOnce() then add() the same listener without removing the relationship first.");
 	return false;
 };
 msignal.Signal.prototype.createSlot = function(listener,once,priority) {
@@ -3601,7 +4245,7 @@ msignal.Slot.prototype.remove = function() {
 	this.signal.remove(this.listener);
 };
 msignal.Slot.prototype.set_listener = function(value) {
-	if(value == null) throw "listener cannot be null";
+	if(value == null) throw new js._Boot.HaxeError("listener cannot be null");
 	return this.listener = value;
 };
 msignal.Slot.prototype.__class__ = msignal.Slot;
@@ -3660,9 +4304,9 @@ msignal.Slot2.prototype.__properties__ = $extend(msignal.Slot.prototype.__proper
 msignal.SlotList = $hxClasses['msignal.SlotList'] = function(head,tail) {
 	this.nonEmpty = false;
 	if(head == null && tail == null) {
-		if(msignal.SlotList.NIL != null) throw "Parameters head and tail are null. Use the NIL element instead.";
+		if(msignal.SlotList.NIL != null) throw new js._Boot.HaxeError("Parameters head and tail are null. Use the NIL element instead.");
 		this.nonEmpty = false;
-	} else if(head == null) throw "Parameter head cannot be null."; else {
+	} else if(head == null) throw new js._Boot.HaxeError("Parameter head cannot be null."); else {
 		this.head = head;
 		if(tail == null) this.tail = msignal.SlotList.NIL; else this.tail = tail;
 		this.nonEmpty = true;
@@ -3892,6 +4536,8 @@ note.client.platform.html.ApplicationContext.prototype.config = function() {
 		var urlMonitor = new dia.net.UrlMonitor("");
 		this.injector.mapValue(dia.net.UrlMonitor,urlMonitor);
 	} catch( error ) {
+		haxe.CallStack.lastException = error;
+		if (error instanceof js._Boot.HaxeError) error = error.val;
 		if( js.Boot.__instanceof(error,String) ) {
 			haxe.Log.trace(error,{ fileName : "ApplicationContext.hx", lineNumber : 59, className : "note.client.platform.html.ApplicationContext", methodName : "config"});
 		} else throw(error);
@@ -3949,18 +4595,7 @@ note.model.service.note.UpdateNoteRequester.prototype.__properties__ = $extend(d
 		return Array.prototype.indexOf.call(a,o,i);
 	};
 };
-{
-	Math.NaN = Number.NaN;
-	Math.NEGATIVE_INFINITY = Number.NEGATIVE_INFINITY;
-	Math.POSITIVE_INFINITY = Number.POSITIVE_INFINITY;
-	$hxClasses.Math = Math;
-	Math.isFinite = function(i) {
-		return isFinite(i);
-	};
-	Math.isNaN = function(i1) {
-		return isNaN(i1);
-	};
-};
+$hxClasses.Math = Math;
 {
 	String.prototype.__class__ = $hxClasses.String = String;
 	String.__name__ = ["String"];
@@ -3977,15 +4612,13 @@ note.model.service.note.UpdateNoteRequester.prototype.__properties__ = $extend(d
 	var Class = $hxClasses.Class = { __name__ : ["Class"]};
 	var Enum = { };
 };
+var __map_reserved = {};
 {
-	Xml.Element = "element";
-	Xml.PCData = "pcdata";
-	Xml.CData = "cdata";
-	Xml.Comment = "comment";
-	Xml.DocType = "doctype";
-	Xml.ProcessingInstruction = "processingInstruction";
-	Xml.Document = "document";
+	var ArrayBuffer = (Function("return typeof ArrayBuffer != 'undefined' ? ArrayBuffer : null"))() || js.html.compat.ArrayBuffer;
+	if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js.html.compat.ArrayBuffer.sliceImpl;
 };
+var DataView = (Function("return typeof DataView != 'undefined' ? DataView : null"))() || js.html.compat.DataView;
+var Uint8Array = (Function("return typeof Uint8Array != 'undefined' ? Uint8Array : null"))() || js.html.compat.Uint8Array._new;
 msignal.SlotList.NIL = new msignal.SlotList(null,null);
 note.client.Main.main();
 function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; };

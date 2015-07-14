@@ -67,6 +67,7 @@ class dia_util_Settings {
 		if(null == $xml) throw new HException('null iterable');
 		$__hx__it = $xml->get_elements();
 		while($__hx__it->hasNext()) {
+			unset($node);
 			$node = $__hx__it->next();
 			++$count;
 			$arr = $path->copy();

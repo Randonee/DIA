@@ -97,7 +97,7 @@ class haxe_Serializer {
 				$this->buf->add((($v) ? "t" : "f"));
 			}break;
 			case 6:{
-				$c = $_g->params[0];
+				$c = _hx_deref($_g)->params[0];
 				{
 					if((is_object($_t = $c) && !($_t instanceof Enum) ? $_t === _hx_qtype("String") : $_t == _hx_qtype("String"))) {
 						$this->serializeString($v);
@@ -148,6 +148,7 @@ class haxe_Serializer {
 						if(null == $v3) throw new HException('null iterable');
 						$__hx__it = $v3->iterator();
 						while($__hx__it->hasNext()) {
+							unset($i1);
 							$i1 = $__hx__it->next();
 							$this->serialize($i1);
 						}
@@ -156,7 +157,7 @@ class haxe_Serializer {
 					case _hx_qtype("Date"):{
 						$d = $v;
 						$this->buf->add("v");
-						$this->buf->add($d->toString());
+						$this->buf->add($d->getTime());
 					}break;
 					case _hx_qtype("haxe.ds.StringMap"):{
 						$this->buf->add("b");
@@ -164,6 +165,7 @@ class haxe_Serializer {
 						if(null == $v4) throw new HException('null iterable');
 						$__hx__it = $v4->keys();
 						while($__hx__it->hasNext()) {
+							unset($k);
 							$k = $__hx__it->next();
 							$this->serializeString($k);
 							$this->serialize($v4->get($k));
@@ -176,6 +178,7 @@ class haxe_Serializer {
 						if(null == $v5) throw new HException('null iterable');
 						$__hx__it = $v5->keys();
 						while($__hx__it->hasNext()) {
+							unset($k1);
 							$k1 = $__hx__it->next();
 							$this->buf->add(":");
 							$this->buf->add($k1);
@@ -188,6 +191,7 @@ class haxe_Serializer {
 						$v6 = $v;
 						$__hx__it = new _hx_array_iterator(array_values($v6->hk));
 						while($__hx__it->hasNext()) {
+							unset($k2);
 							$k2 = $__hx__it->next();
 							$this->serialize($k2);
 							$this->serialize($v6->get($k2));
@@ -281,14 +285,25 @@ class haxe_Serializer {
 				}
 			}break;
 			case 4:{
-				if($this->useCache && $this->serializeRef($v)) {
-					return;
+				if(Std::is($v, _hx_qtype("Class"))) {
+					$className = Type::getClassName($v);
+					$this->buf->add("A");
+					$this->serializeString($className);
+				} else {
+					if(Std::is($v, _hx_qtype("Enum"))) {
+						$this->buf->add("B");
+						$this->serializeString(Type::getEnumName($v));
+					} else {
+						if($this->useCache && $this->serializeRef($v)) {
+							return;
+						}
+						$this->buf->add("o");
+						$this->serializeFields($v);
+					}
 				}
-				$this->buf->add("o");
-				$this->serializeFields($v);
 			}break;
 			case 7:{
-				$e = $_g->params[0];
+				$e = _hx_deref($_g)->params[0];
 				{
 					if($this->useCache) {
 						if($this->serializeRef($v)) {

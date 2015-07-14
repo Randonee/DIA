@@ -57,6 +57,19 @@ class haxe_Unserializer {
 		}
 		return $k;
 	}
+	public function readFloat() {
+		$p1 = $this->pos;
+		while(true) {
+			$c = ord(substr($this->buf,$this->pos,1));
+			if($c >= 43 && $c < 58 || $c === 101 || $c === 69) {
+				$this->pos++;
+			} else {
+				break;
+			}
+			unset($c);
+		}
+		return Std::parseFloat(_hx_substr($this->buf, $p1, $this->pos - $p1));
+	}
 	public function unserializeObject($o) {
 		while(true) {
 			if($this->pos >= $this->length) {
@@ -113,17 +126,7 @@ class haxe_Unserializer {
 				return $this->readDigits();
 			}break;
 			case 100:{
-				$p1 = $this->pos;
-				while(true) {
-					$c = ord(substr($this->buf,$this->pos,1));
-					if($c >= 43 && $c < 58 || $c === 101 || $c === 69) {
-						$this->pos++;
-					} else {
-						break;
-					}
-					unset($c);
-				}
-				return Std::parseFloat(_hx_substr($this->buf, $p1, $this->pos - $p1));
+				return $this->readFloat();
 			}break;
 			case 121:{
 				$len = $this->readDigits();
@@ -150,12 +153,12 @@ class haxe_Unserializer {
 				$a = new _hx_array(array());
 				$this->cache->push($a);
 				while(true) {
-					$c1 = ord(substr($this->buf,$this->pos,1));
-					if($c1 === 104) {
+					$c = ord(substr($this->buf,$this->pos,1));
+					if($c === 104) {
 						$this->pos++;
 						break;
 					}
-					if($c1 === 117) {
+					if($c === 117) {
 						$this->pos++;
 						$n = $this->readDigits();
 						$a[$a->length + $n - 1] = null;
@@ -163,7 +166,7 @@ class haxe_Unserializer {
 					} else {
 						$a->push($this->unserialize());
 					}
-					unset($c1);
+					unset($c);
 				}
 				return $a;
 			}break;
@@ -253,22 +256,22 @@ class haxe_Unserializer {
 				$h1 = new haxe_ds_IntMap();
 				$this->cache->push($h1);
 				$buf3 = $this->buf;
-				$c2 = null;
+				$c1 = null;
 				{
-					$p3 = $this->pos++;
-					$c2 = ord(substr($this->buf,$p3,1));
+					$p2 = $this->pos++;
+					$c1 = ord(substr($this->buf,$p2,1));
 				}
-				while($c2 === 58) {
+				while($c1 === 58) {
 					$i = $this->readDigits();
 					$h1->set($i, $this->unserialize());
 					{
-						$p4 = $this->pos++;
-						$c2 = ord(substr($this->buf,$p4,1));
-						unset($p4);
+						$p3 = $this->pos++;
+						$c1 = ord(substr($this->buf,$p3,1));
+						unset($p3);
 					}
 					unset($i);
 				}
-				if($c2 !== 104) {
+				if($c1 !== 104) {
 					throw new HException("Invalid IntMap format");
 				}
 				return $h1;
@@ -286,9 +289,14 @@ class haxe_Unserializer {
 				return $h2;
 			}break;
 			case 118:{
-				$d = Date::fromString(_hx_substr($this->buf, $this->pos, 19));
+				$d = null;
+				if(ord(substr($this->buf,$this->pos,1)) >= 48 && ord(substr($this->buf,$this->pos,1)) <= 57 && ord(substr($this->buf,$this->pos + 1,1)) >= 48 && ord(substr($this->buf,$this->pos + 1,1)) <= 57 && ord(substr($this->buf,$this->pos + 2,1)) >= 48 && ord(substr($this->buf,$this->pos + 2,1)) <= 57 && ord(substr($this->buf,$this->pos + 3,1)) >= 48 && ord(substr($this->buf,$this->pos + 3,1)) <= 57 && ord(substr($this->buf,$this->pos + 4,1)) === 45) {
+					$d = Date::fromString(_hx_substr($this->buf, $this->pos, 19));
+					$this->pos += 19;
+				} else {
+					$d = Date::fromTime($this->readFloat());
+				}
 				$this->cache->push($d);
-				$this->pos += 19;
 				return $d;
 			}break;
 			case 115:{
@@ -311,38 +319,38 @@ class haxe_Unserializer {
 				$bpos = 0;
 				while($i1 < $max) {
 					$c11 = $codes[haxe_Unserializer_6($this, $_g, $bpos, $buf5, $bytes, $codes, $i1, $len1, $max, $rest, $size)];
-					$c21 = $codes[haxe_Unserializer_7($this, $_g, $bpos, $buf5, $bytes, $c11, $codes, $i1, $len1, $max, $rest, $size)];
+					$c2 = $codes[haxe_Unserializer_7($this, $_g, $bpos, $buf5, $bytes, $c11, $codes, $i1, $len1, $max, $rest, $size)];
 					{
 						$pos = $bpos++;
-						$bytes->b[$pos] = chr($c11 << 2 | $c21 >> 4);
+						$bytes->b[$pos] = chr($c11 << 2 | $c2 >> 4);
 						unset($pos);
 					}
-					$c3 = $codes[haxe_Unserializer_8($this, $_g, $bpos, $buf5, $bytes, $c11, $c21, $codes, $i1, $len1, $max, $rest, $size)];
+					$c3 = $codes[haxe_Unserializer_8($this, $_g, $bpos, $buf5, $bytes, $c11, $c2, $codes, $i1, $len1, $max, $rest, $size)];
 					{
 						$pos1 = $bpos++;
-						$bytes->b[$pos1] = chr($c21 << 4 | $c3 >> 2);
+						$bytes->b[$pos1] = chr($c2 << 4 | $c3 >> 2);
 						unset($pos1);
 					}
-					$c4 = $codes[haxe_Unserializer_9($this, $_g, $bpos, $buf5, $bytes, $c11, $c21, $c3, $codes, $i1, $len1, $max, $rest, $size)];
+					$c4 = $codes[haxe_Unserializer_9($this, $_g, $bpos, $buf5, $bytes, $c11, $c2, $c3, $codes, $i1, $len1, $max, $rest, $size)];
 					{
 						$pos2 = $bpos++;
 						$bytes->b[$pos2] = chr($c3 << 6 | $c4);
 						unset($pos2);
 					}
-					unset($c4,$c3,$c21,$c11);
+					unset($c4,$c3,$c2,$c11);
 				}
 				if($rest >= 2) {
 					$c12 = $codes[haxe_Unserializer_10($this, $_g, $bpos, $buf5, $bytes, $codes, $i1, $len1, $max, $rest, $size)];
-					$c22 = $codes[haxe_Unserializer_11($this, $_g, $bpos, $buf5, $bytes, $c12, $codes, $i1, $len1, $max, $rest, $size)];
+					$c21 = $codes[haxe_Unserializer_11($this, $_g, $bpos, $buf5, $bytes, $c12, $codes, $i1, $len1, $max, $rest, $size)];
 					{
 						$pos3 = $bpos++;
-						$bytes->b[$pos3] = chr($c12 << 2 | $c22 >> 4);
+						$bytes->b[$pos3] = chr($c12 << 2 | $c21 >> 4);
 					}
 					if($rest === 3) {
-						$c31 = $codes[haxe_Unserializer_12($this, $_g, $bpos, $buf5, $bytes, $c12, $c22, $codes, $i1, $len1, $max, $rest, $size)];
+						$c31 = $codes[haxe_Unserializer_12($this, $_g, $bpos, $buf5, $bytes, $c12, $c21, $codes, $i1, $len1, $max, $rest, $size)];
 						{
 							$pos4 = $bpos++;
-							$bytes->b[$pos4] = chr($c22 << 4 | $c31 >> 2);
+							$bytes->b[$pos4] = chr($c21 << 4 | $c31 >> 2);
 						}
 					}
 				}
@@ -364,8 +372,23 @@ class haxe_Unserializer {
 				}
 				return $o2;
 			}break;
-			default:{
+			case 65:{
+				$name4 = $this->unserialize();
+				$cl2 = $this->resolver->resolveClass($name4);
+				if($cl2 === null) {
+					throw new HException("Class not found " . _hx_string_or_null($name4));
+				}
+				return $cl2;
 			}break;
+			case 66:{
+				$name5 = $this->unserialize();
+				$e2 = $this->resolver->resolveEnum($name5);
+				if($e2 === null) {
+					throw new HException("Enum not found " . _hx_string_or_null($name5));
+				}
+				return $e2;
+			}break;
+			default:{}break;
 			}
 		}
 		$this->pos--;
@@ -421,14 +444,14 @@ function haxe_Unserializer_2(&$__hx__this, &$edecl, &$tag) {
 }
 function haxe_Unserializer_3(&$__hx__this, &$_g, &$len) {
 	{
-		$p2 = $__hx__this->pos++;
-		return ord(substr($__hx__this->buf,$p2,1));
+		$p1 = $__hx__this->pos++;
+		return ord(substr($__hx__this->buf,$p1,1));
 	}
 }
 function haxe_Unserializer_4(&$__hx__this, &$_g, &$buf5, &$len1) {
 	{
-		$p5 = $__hx__this->pos++;
-		return ord(substr($__hx__this->buf,$p5,1));
+		$p4 = $__hx__this->pos++;
+		return ord(substr($__hx__this->buf,$p4,1));
 	}
 }
 function haxe_Unserializer_5(&$__hx__this, &$_g, &$buf5, &$codes, &$i1, &$len1, &$rest, &$size) {
@@ -450,13 +473,13 @@ function haxe_Unserializer_7(&$__hx__this, &$_g, &$bpos, &$buf5, &$bytes, &$c11,
 		return ord(substr($buf5,$index2,1));
 	}
 }
-function haxe_Unserializer_8(&$__hx__this, &$_g, &$bpos, &$buf5, &$bytes, &$c11, &$c21, &$codes, &$i1, &$len1, &$max, &$rest, &$size) {
+function haxe_Unserializer_8(&$__hx__this, &$_g, &$bpos, &$buf5, &$bytes, &$c11, &$c2, &$codes, &$i1, &$len1, &$max, &$rest, &$size) {
 	{
 		$index3 = $i1++;
 		return ord(substr($buf5,$index3,1));
 	}
 }
-function haxe_Unserializer_9(&$__hx__this, &$_g, &$bpos, &$buf5, &$bytes, &$c11, &$c21, &$c3, &$codes, &$i1, &$len1, &$max, &$rest, &$size) {
+function haxe_Unserializer_9(&$__hx__this, &$_g, &$bpos, &$buf5, &$bytes, &$c11, &$c2, &$c3, &$codes, &$i1, &$len1, &$max, &$rest, &$size) {
 	{
 		$index4 = $i1++;
 		return ord(substr($buf5,$index4,1));
@@ -474,7 +497,7 @@ function haxe_Unserializer_11(&$__hx__this, &$_g, &$bpos, &$buf5, &$bytes, &$c12
 		return ord(substr($buf5,$index6,1));
 	}
 }
-function haxe_Unserializer_12(&$__hx__this, &$_g, &$bpos, &$buf5, &$bytes, &$c12, &$c22, &$codes, &$i1, &$len1, &$max, &$rest, &$size) {
+function haxe_Unserializer_12(&$__hx__this, &$_g, &$bpos, &$buf5, &$bytes, &$c12, &$c21, &$codes, &$i1, &$len1, &$max, &$rest, &$size) {
 	{
 		$index7 = $i1++;
 		return ord(substr($buf5,$index7,1));
@@ -482,7 +505,7 @@ function haxe_Unserializer_12(&$__hx__this, &$_g, &$bpos, &$buf5, &$bytes, &$c12
 }
 function haxe_Unserializer_13(&$__hx__this, &$_g, &$cl1, &$name3, &$o2) {
 	{
-		$p6 = $__hx__this->pos++;
-		return ord(substr($__hx__this->buf,$p6,1));
+		$p5 = $__hx__this->pos++;
+		return ord(substr($__hx__this->buf,$p5,1));
 	}
 }

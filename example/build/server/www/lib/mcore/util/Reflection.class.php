@@ -15,7 +15,7 @@ class mcore_util_Reflection {
 			$_g = Type::typeof($object);
 			switch($_g->index) {
 			case 6:{
-				$c = $_g->params[0];
+				$c = _hx_deref($_g)->params[0];
 				return Type::getInstanceFields($c);
 			}break;
 			default:{

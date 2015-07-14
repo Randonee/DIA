@@ -92,6 +92,7 @@ class mdata_Dictionary {
 		if(null == $this) throw new HException('null iterable');
 		$__hx__it = $this->keys();
 		while($__hx__it->hasNext()) {
+			unset($key);
 			$key = $__hx__it->next();
 			$value = $this->get($key);
 			$k = null;

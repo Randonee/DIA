@@ -7,6 +7,9 @@ class note_model_domain_Note extends dia_model_domain_ContextDomainObject {
 	}}
 	public $name;
 	public $body;
+	public function __getManager() {
+		return note_model_domain_Note::$manager;
+	}
 	public function __call($m, $a) {
 		if(isset($this->$m) && is_callable($this->$m))
 			return call_user_func_array($this->$m, $a);

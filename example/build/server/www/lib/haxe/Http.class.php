@@ -34,12 +34,13 @@ class haxe_Http {
 		return $this;
 	}
 	public function request($post = null) {
+		$_g = $this;
 		$me = $this;
 		$me1 = $this;
 		$output = new haxe_io_BytesOutput();
 		$old = (isset($this->onError) ? $this->onError: array($this, "onError"));
 		$err = false;
-		$this->onError = array(new _hx_lambda(array(&$err, &$me, &$me1, &$old, &$output, &$post), "haxe_Http_5"), 'execute');
+		$this->onError = array(new _hx_lambda(array(&$_g, &$err, &$me, &$me1, &$old, &$output, &$post), "haxe_Http_5"), 'execute');
 		$this->customRequest($post, $output, null, null);
 		if(!$err) {
 			$me1->onData($me1->responseData = $output->getBytes()->toString());
@@ -47,7 +48,7 @@ class haxe_Http {
 	}
 	public function customRequest($post, $api, $sock = null, $method = null) {
 		$this->responseData = null;
-		$url_regexp = new EReg("^(https?://)?([a-zA-Z\\.0-9-]+)(:[0-9]+)?(.*)\$", "");
+		$url_regexp = new EReg("^(https?://)?([a-zA-Z\\.0-9_-]+)(:[0-9]+)?(.*)\$", "");
 		if(!$url_regexp->match($this->url)) {
 			$this->onError("Invalid URL");
 			return;
@@ -90,6 +91,7 @@ class haxe_Http {
 			if(null == $this->params) throw new HException('null iterable');
 			$__hx__it = $this->params->iterator();
 			while($__hx__it->hasNext()) {
+				unset($p);
 				$p = $__hx__it->next();
 				$b->add("--");
 				$b->add($boundary);
@@ -117,6 +119,7 @@ class haxe_Http {
 			if(null == $this->params) throw new HException('null iterable');
 			$__hx__it = $this->params->iterator();
 			while($__hx__it->hasNext()) {
+				unset($p1);
 				$p1 = $__hx__it->next();
 				if($uri === null) {
 					$uri = "";
@@ -180,6 +183,7 @@ class haxe_Http {
 		if(null == $this->headers) throw new HException('null iterable');
 		$__hx__it = $this->headers->iterator();
 		while($__hx__it->hasNext()) {
+			unset($h1);
 			$h1 = $__hx__it->next();
 			$b1->add($h1->header);
 			$b1->add(": ");
@@ -240,8 +244,7 @@ class haxe_Http {
 				}catch(Exception $__hx__e) {
 					$_ex_ = ($__hx__e instanceof HException) ? $__hx__e->e : $__hx__e;
 					$e2 = $_ex_;
-					{
-					}
+					{}
 				}
 				$this->onError(Std::string($e1));
 			}
@@ -409,8 +412,7 @@ class haxe_Http {
 				}
 			}catch(Exception $__hx__e) {
 				$_ex_ = ($__hx__e instanceof HException) ? $__hx__e->e : $__hx__e;
-				if(($e = $_ex_) instanceof haxe_io_Eof){
-				} else throw $__hx__e;;
+				if(($e = $_ex_) instanceof haxe_io_Eof){} else throw $__hx__e;;
 			}
 		} else {
 			$api->prepare($size);
@@ -521,16 +523,13 @@ class haxe_Http {
 	function __toString() { return 'haxe.Http'; }
 }
 function haxe_Http_0(&$__hx__this, &$url, $data) {
-	{
-	}
+	{}
 }
 function haxe_Http_1(&$__hx__this, &$url, $msg) {
-	{
-	}
+	{}
 }
 function haxe_Http_2(&$__hx__this, &$url, $status) {
-	{
-	}
+	{}
 }
 function haxe_Http_3(&$header, &$value, $h) {
 	{
@@ -542,11 +541,12 @@ function haxe_Http_4(&$param, &$value, $p) {
 		return $p->param !== $param;
 	}
 }
-function haxe_Http_5(&$err, &$me, &$me1, &$old, &$output, &$post, $e) {
+function haxe_Http_5(&$_g, &$err, &$me, &$me1, &$old, &$output, &$post, $e) {
 	{
 		$me1->responseData = $output->getBytes()->toString();
 		$err = true;
-		call_user_func_array($old, array($e));
+		$_g->onError = $old;
+		$_g->onError($e);
 	}
 }
 function haxe_Http_6(&$api, &$b1, &$boundary, &$data, &$host, &$method, &$multipart, &$port, &$portString, &$post, &$request, &$secure, &$sock, &$uri, &$url_regexp, $h) {

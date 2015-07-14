@@ -10,8 +10,7 @@ class dia_server_ServerContext {
 	}}
 	public $injector;
 	public $_urlMappings;
-	public function init() {
-	}
+	public function init() {}
 	public function addURLMapping($urlReg, $controllerClass, $preconditions = null) {
 		if($preconditions === null) {
 			$preconditions = (new _hx_array(array()));

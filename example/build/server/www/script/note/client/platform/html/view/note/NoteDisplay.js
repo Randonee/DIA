@@ -9,10 +9,10 @@ for(var k in dia.js.JSView.prototype ) note.client.platform.html.view.note.NoteD
 note.client.platform.html.view.note.NoteDisplay.prototype.note = null;
 note.client.platform.html.view.note.NoteDisplay.prototype.nameInput = null;
 note.client.platform.html.view.note.NoteDisplay.prototype.bodyText = null;
-note.client.platform.html.view.note.NoteDisplay.prototype.update = function(note) {
-	this.note = note;
-	this.nameInput.value = note.name;
-	this.bodyText.value = note.body;
+note.client.platform.html.view.note.NoteDisplay.prototype.update = function(note1) {
+	this.note = note1;
+	this.nameInput.value = note1.name;
+	this.bodyText.value = note1.body;
 };
 note.client.platform.html.view.note.NoteDisplay.prototype.onUpdateNote = function() {
 	this.note.name = this.nameInput.value;

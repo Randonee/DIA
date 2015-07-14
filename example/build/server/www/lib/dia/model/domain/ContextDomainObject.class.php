@@ -4,6 +4,9 @@ class dia_model_domain_ContextDomainObject extends dia_model_domain_SpodDomainOb
 	public function __construct() { if(!php_Boot::$skip_constructor) {
 		parent::__construct();
 	}}
+	public function __getManager() {
+		return dia_model_domain_ContextDomainObject::$manager;
+	}
 	static function __meta__() { $args = func_get_args(); return call_user_func_array(self::$__meta__, $args); }
 	static $__meta__;
 	static $manager;

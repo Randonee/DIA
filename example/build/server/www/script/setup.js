@@ -6,6 +6,7 @@ if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toSt
 return proto;
 }
 
+if(typeof _List=='undefined') _List = {};
 if(typeof dia=='undefined') dia = {};
 if(!dia.client) dia.client = {};
 if(!dia.client.event) dia.client.event = {};
@@ -20,6 +21,7 @@ if(!dia.net) dia.net = {};
 if(!dia.terminal) dia.terminal = {};
 if(!dia.util) dia.util = {};
 if(typeof haxe=='undefined') haxe = {};
+if(!haxe._Int64) haxe._Int64 = {};
 if(!haxe._Template) haxe._Template = {};
 if(!haxe.ds) haxe.ds = {};
 if(!haxe.io) haxe.io = {};
@@ -27,6 +29,9 @@ if(!haxe.rtti) haxe.rtti = {};
 if(!haxe.xml) haxe.xml = {};
 if(!haxe.xml._Fast) haxe.xml._Fast = {};
 if(typeof js=='undefined') js = {};
+if(!js._Boot) js._Boot = {};
+if(!js.html) js.html = {};
+if(!js.html.compat) js.html.compat = {};
 if(typeof mcore=='undefined') mcore = {};
 if(!mcore.exception) mcore.exception = {};
 if(!mcore.util) mcore.util = {};
